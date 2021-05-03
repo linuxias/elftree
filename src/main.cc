@@ -3,6 +3,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include "rpm_tree_tui.h"
+
 static void __print_usage()
 {
   std::cout << "Usage : rpmtree {library name or file name}\n" << std::endl;
@@ -15,7 +17,7 @@ static bool __check_file_is_exists(std::string fileName)
   return true;
 }
 
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
   if (argc != 2) {
     __print_usage();
@@ -28,6 +30,10 @@ int main(int argc, char **argv)
     return -1;
   }
 
-  std::cout << "File is exists" << std::endl;
+  RpmTreeTUI tui;
+  tui.initTerminal();
+
+  sleep(10);
+
   return 0;
 }
