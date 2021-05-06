@@ -58,12 +58,10 @@ void ElfInfo::loadElfInfo(void)
     _elf32.ehdr = (Elf32_Ehdr *)_mem;
     _elf32.phdr = (Elf32_Phdr *)&(_mem[_elf32.ehdr->e_phoff]);
     _elf32.shdr = (Elf32_Shdr *)&(_mem[_elf32.ehdr->e_shoff]);
-    printf("32bit\n");
   } else if (buf[EI_CLASS] == ELFCLASS64) {
     _elf64.ehdr = (Elf64_Ehdr *)_mem;
     _elf64.phdr = (Elf64_Phdr *)&(_mem[_elf64.ehdr->e_phoff]);
     _elf64.shdr = (Elf64_Shdr *)&(_mem[_elf64.ehdr->e_shoff]);
-    printf("64bit\n");
   } else {
     /* TODO : Process unknown class exception*/
   }
@@ -111,8 +109,7 @@ std::vector<std::string> ElfInfo::getDependency(void) {
       for (int j = 0; j < count; j++) {
         Elf64_Dyn *dyn = (Elf64_Dyn *)&addr[j * sizeof(Elf64_Dyn)];
         if (dyn->d_tag == DT_NEEDED) {
-          deps.push_back(std::string((char *)&dynstr[dyn->d_un.d_val]);
-          printf("%s\n", (char *)&dynstr[dyn->d_un.d_val]);
+          deps.push_back(std::string((char *)&dynstr[dyn->d_un.d_val]));
         }
       }
     }

@@ -4,6 +4,7 @@
 #include <boost/filesystem.hpp>
 
 #include "rpm_tree_tui.h"
+#include "elf_util.h"
 
 static void __print_usage()
 {
@@ -30,10 +31,14 @@ int main(int argc, char *argv[])
     return -1;
   }
 
+  ElfInfo info(fileName);
+  std::vector<std::string> deps = info.getDependency();
+
   RpmTreeTUI tui;
   tui.initTerminal();
+  tui.setMenuList(deps);
 
-  sleep(10);
+  tui.run();
 
   return 0;
 }
