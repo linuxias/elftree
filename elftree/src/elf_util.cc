@@ -23,8 +23,8 @@ bool isELF(const uint8_t *mem)
 
     if (mem[0] != FIRST_MAGIC_STRING && strcmp((char *)(&mem[1]), ELF_STRING)) {
       fprintf(stderr, "Not an ELF");
-      return false; 
-    }   
+      return false;
+    }
 
     return true;
 }
@@ -101,7 +101,7 @@ std::vector<std::string> ElfInfo::getDependency(void) {
       dynstr = (unsigned char *)&_mem[shdr[i].sh_offset];
     }
   }
-  
+
   for (i = 0; i < ehdr->e_shnum; i++) {
     if (strcmp((char *)&string_table[shdr[i].sh_name], ".dynamic") == 0) {
       unsigned char *addr = &_mem[shdr[i].sh_offset];
@@ -131,4 +131,9 @@ std::string ElfInfo::getFileName(void)
 ElfArchType ElfInfo::getArchType(void)
 {
   return _arch_type;
+}
+
+std::string ElfInfo::getAbsolutePath(void)
+{
+
 }

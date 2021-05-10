@@ -44,6 +44,7 @@ class ElfInfo {
     std::string getFileName(void);
     ElfArchType getArchType(void);
     std::vector<std::string> getDependency(void);
+    std::string getAbsolutePath(void);
 };
 
 #endif /* __ELF_UTIL_H__ */

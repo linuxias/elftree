@@ -1,5 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-PROJECT(rpmtree CXX)
+PROJECT(elftree CXX)
 
 SET(PREFIX ${CMAKE_INSTALL_PREFIX})
 SET(EXEC_PREFIX "\${prefix}")
@@ -18,13 +18,11 @@ INCLUDE(ApplyPkgConfig)
 PKG_CHECK_MODULES(NCURSES_DEPS REQUIRED ncurses)
 PKG_CHECK_MODULES(NCURSES_MENU_DEPS REQUIRED menu)
 PKG_CHECK_MODULES(NCURSES_FORM_DEPS REQUIRED form)
-PKG_CHECK_MODULES(RPM_DEPS REQUIRED rpm)
-PKG_CHECK_MODULES(POPT_DEPS REQUIRED popt)
 FIND_PACKAGE(Boost REQUIRED COMPONENTS system filesystem regex program_options)
 
 #################################################################
-SET(TARGET_RPMTREE "rpmtree")
-SET(TARGET_RPMTREE_UNIT_TEST "rpmtree-unit-test")
+SET(TARGET_ELFTREE "elftree")
+SET(TARGET_ELFTREE_UNIT_TEST "elftree-unit-test")
 #################################################################
-ADD_SUBDIRECTORY(rpmtree)
-ADD_SUBDIRECTORY(test)
+ADD_SUBDIRECTORY(elftree)
+#ADD_SUBDIRECTORY(test)
