@@ -8,7 +8,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
-#include "rpm_tree_tui.h"
+#include "tui.h"
 #include "elf_util.h"
 
 using namespace std::string_literals;
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
   ElfInfo info(fileName);
   std::vector<std::string> deps = info.getDependency();
 
-  RpmTreeTUI tui;
+  ElfTreeTUI tui;
   tui.initTerminal();
   tui.setMenuList(deps);
   tui.run();

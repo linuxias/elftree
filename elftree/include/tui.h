@@ -1,5 +1,5 @@
-#ifndef __RPM_TREE_TUI_H__
-#define __RPM_TREE_TUI_H__
+#ifndef __TUI_H__
+#define __TUI_H__
 
 #include <string>
 #include <vector>
@@ -8,7 +8,7 @@
 #include <menu.h>
 #include <form.h>
 
-class RpmTreeTUI {
+class ElfTreeTUI {
   public:
     void initTerminal(void);
     void run(void);
@@ -26,4 +26,4 @@ class RpmTreeTUI {
     void createInfoWindow(int x, int y);
 };
 
-#endif /* __RPM_TREE_TUI_H__ */
+#endif /* __TUI_H__ */

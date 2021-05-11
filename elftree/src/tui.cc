@@ -9,9 +9,9 @@
 #include <menu.h>
 #include <form.h>
 
-#include "rpm_tree_tui.h"
+#include "tui.h"
 
-void RpmTreeTUI::createMenu(int x, int y)
+void ElfTreeTUI::createMenu(int x, int y)
 {
   int size = _menus.size();
 
@@ -38,13 +38,13 @@ void RpmTreeTUI::createMenu(int x, int y)
   wrefresh(menuWindow);
 }
 
-void RpmTreeTUI::createInfoWindow(int x, int y) {
+void ElfTreeTUI::createInfoWindow(int x, int y) {
 	infoWindow = newwin(y, x - 1, 0, maxX - x);
 	box(infoWindow, 0, 0);
 	wrefresh(infoWindow);
 }
 
-void RpmTreeTUI::initTerminal(void) {
+void ElfTreeTUI::initTerminal(void) {
   initscr();
   cbreak();
   noecho();
@@ -53,12 +53,12 @@ void RpmTreeTUI::initTerminal(void) {
   getmaxyx(stdscr, maxY, maxX);
 }
 
-void RpmTreeTUI::setMenuList(std::vector<std::string> menus)
+void ElfTreeTUI::setMenuList(std::vector<std::string> menus)
 {
   _menus = menus;
 }
 
-void RpmTreeTUI::run(void)
+void ElfTreeTUI::run(void)
 {
   createMenu(maxX / 3, maxY);
   createInfoWindow((maxX / 3) * 2, LINES);

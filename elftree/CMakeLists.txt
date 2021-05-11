@@ -1,5 +1,5 @@
 SET(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS}")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EXTRA_CXX_FLAGS} -Wall -Winline -g -fPIE -fno-omit-frame-pointer -std=c++11")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EXTRA_CXX_FLAGS} -Wall -Winline -g -fPIE -fno-omit-frame-pointer -std=c++14")
 
 AUX_SOURCE_DIRECTORY(${CMAKE_CURRENT_SOURCE_DIR}/src SOURCES)
 
