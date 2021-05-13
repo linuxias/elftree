@@ -35,6 +35,7 @@ class ElfInfo {
 
     void loadMemoryMap(void);
     void loadElfInfo(void);
+    bool isELF(const uint8_t *mem);
 
   public:
     ElfInfo() = delete;

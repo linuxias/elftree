@@ -16,7 +16,7 @@
 
 #include "elf_util.h"
 
-bool isELF(const uint8_t *mem)
+bool ElfInfo::isELF(const uint8_t *mem)
 {
 #define FIRST_MAGIC_STRING 0x7f
 #define ELF_STRING "ELF"
