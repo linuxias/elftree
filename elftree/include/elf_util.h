@@ -39,12 +39,12 @@ class ElfInfo {
 
   public:
     ElfInfo() = delete;
-    ElfInfo(const std::string &fileName);
+    ElfInfo(const std::string fileName);
     ~ElfInfo();
 
     std::string getFileName(void);
     ElfArchType getArchType(void);
-    std::vector<std::string> getDependency(void);
+    std::list<std::string> getDependency(void);
     std::string getAbsolutePath(void);
 };
 

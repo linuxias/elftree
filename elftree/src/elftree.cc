@@ -9,6 +9,11 @@ TreeItem::TreeItem(const std::string fileName) : _fileName(fileName)
   _elf = new ElfInfo(_fileName);
 }
 
+TreeItem::TreeItem(ElfInfo *elf) : _elf(elf)
+{
+  _fileName = _elf->getFileName();
+}
+
 TreeItem* TreeItem::getNextItem() { return _next; }
 
 TreeItem* TreeItem::getPrevItem() { return _prev; }

@@ -17,6 +17,7 @@ class TreeItem {
 
   public:
     TreeItem(std::string fileName);
+    TreeItem(ElfInfo* elf);
     TreeItem* getParentItem();
     void setParentItem(TreeItem *item);
     TreeItem* getNextItem();

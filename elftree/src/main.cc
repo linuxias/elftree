@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <list>
+#include <memory>
 #include <string>
 
 #include <boost/filesystem.hpp>
@@ -9,6 +10,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 
 #include "tui.h"
+#include "elftree.h"
 #include "elf_util.h"
 
 using namespace std::string_literals;
@@ -87,7 +89,6 @@ static std::list<std::string> __get_libpath_list(void)
     }
   }
 
-  pathList.sort();
   pathList.unique();
 
   return pathList;
@@ -106,12 +107,39 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-  ElfInfo info(fileName);
-  std::vector<std::string> deps = info.getDependency();
+  std::vector<std::string> treelist;
+  treelist.push_back(fileName);
+  TreeItem *root = new TreeItem(fileName);
+  ElfInfo *root_info = root->getElfInfo();
+  ElfArchType root_arch = root_info->getArchType();
+
+  std::list<std::string> libpaths = __get_libpath_list();
+  std::list<std::string> deps = root_info->getDependency();
+
+  for (auto& dep : deps) {
+    for (auto &dirpath : libpaths) {
+      std::string filepath = dirpath + "/" + dep;
+      if (__check_file_is_exists(filepath) == false) {
+        continue;
+      } else {
+        ElfInfo *tmpInfo = new ElfInfo(filepath);
+        ElfArchType tmp_arch = tmpInfo->getArchType();
+        if (tmp_arch == root_arch) {
+          treelist.push_back(filepath);
+          TreeItem *depItem = new TreeItem(tmpInfo);
+          root->addChildItem(depItem);
+          break;
+        } else {
+          delete tmpInfo;
+          continue;
+        }
+      }
+    }
+  }
 
   ElfTreeTUI tui;
   tui.initTerminal();
-  tui.setMenuList(deps);
+  tui.setMenuList(treelist);
   tui.run();
 
   return 0;

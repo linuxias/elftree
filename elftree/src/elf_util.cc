@@ -1,6 +1,8 @@
 #include <string>
 #include <stdexcept>
-#include <vector>
+#include <list>
+#include <iostream>
+
 
 #include <elf.h>
 #include <fcntl.h>
@@ -68,10 +70,9 @@ void ElfInfo::loadElfInfo(void)
   _arch_type = (ElfArchType)buf[EI_CLASS];
 }
 
-ElfInfo::ElfInfo(const std::string &fileName) :
+ElfInfo::ElfInfo(const std::string fileName) :
   _fileName(fileName), _arch_type(ElfArchType::ELF_ARCH_UNKNOWN)
 {
-
   errno = 0;
   _fd = open(_fileName.c_str(), O_RDONLY);
   if (errno < 0 || _fd == -1) {
@@ -87,8 +88,8 @@ ElfInfo::ElfInfo(const std::string &fileName) :
   loadElfInfo();
 }
 
-std::vector<std::string> ElfInfo::getDependency(void) {
-  std::vector<std::string> deps;
+std::list<std::string> ElfInfo::getDependency(void) {
+  std::list<std::string> deps;
   int i;
   unsigned char *string_table;
   Elf64_Ehdr *ehdr = _elf64.ehdr;
