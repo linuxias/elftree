@@ -3,6 +3,7 @@
 #include <list>
 #include <iostream>
 
+#include <boost/filesystem.hpp>
 
 #include <elf.h>
 #include <fcntl.h>
@@ -70,15 +71,19 @@ void ElfInfo::loadElfInfo(void)
   _arch_type = (ElfArchType)buf[EI_CLASS];
 }
 
-ElfInfo::ElfInfo(const std::string fileName) :
-  _fileName(fileName), _arch_type(ElfArchType::ELF_ARCH_UNKNOWN)
+ElfInfo::ElfInfo(const std::string filePath) :
+  _filePath(filePath), _arch_type(ElfArchType::ELF_ARCH_UNKNOWN)
 {
   errno = 0;
-  _fd = open(_fileName.c_str(), O_RDONLY);
+  _fd = open(_filePath.c_str(), O_RDONLY);
   if (errno < 0 || _fd == -1) {
     perror("open");
     exit(-1);
   }
+
+  boost::filesystem::path p(filePath);
+  _dirPath = p.parent_path().string();
+  _fileName = p.filename().string();
 
   loadMemoryMap();
   if (isELF(_mem) == false) {

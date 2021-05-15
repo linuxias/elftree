@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
         ElfInfo *tmpInfo = new ElfInfo(filepath);
         ElfArchType tmp_arch = tmpInfo->getArchType();
         if (tmp_arch == root_arch) {
-          treelist.push_back(filepath);
+          treelist.push_back(tmpInfo->getFileName());
           TreeItem *depItem = new TreeItem(tmpInfo);
           root->addChildItem(depItem);
           break;

@@ -28,6 +28,8 @@ class ElfInfo {
   private:
     int _fd;
     uint8_t *_mem;
+    std::string _filePath;
+    std::string _dirPath;
     std::string _fileName;
     ElfArchType _arch_type;
     Elf64Info _elf64;
@@ -39,7 +41,7 @@ class ElfInfo {
 
   public:
     ElfInfo() = delete;
-    ElfInfo(const std::string fileName);
+    ElfInfo(const std::string filePath);
     ~ElfInfo();
 
     std::string getFileName(void);
