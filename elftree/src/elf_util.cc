@@ -85,6 +85,8 @@ ElfInfo::ElfInfo(const std::string filePath) :
   _dirPath = p.parent_path().string();
   _fileName = p.filename().string();
 
+  _dirPath = boost::filesystem::absolute(_dirPath).string();
+
   loadMemoryMap();
   if (isELF(_mem) == false) {
     throw std::invalid_argument("This file is not ELF");
@@ -141,5 +143,5 @@ ElfArchType ElfInfo::getArchType(void)
 
 std::string ElfInfo::getAbsolutePath(void)
 {
-
+  return _dirPath;
 }
