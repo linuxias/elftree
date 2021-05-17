@@ -1,5 +1,5 @@
-#ifndef __ELF_UTIL_H__
-#define __ELF_UTIL_H__
+#ifndef __ELF_INFO_H__
+#define __ELF_INFO_H__
 
 #include <string>
 #include <vector>
@@ -50,4 +50,4 @@ class ElfInfo {
     std::string getAbsolutePath(void);
 };
 
-#endif /* __ELF_UTIL_H__ */
+#endif /* __ELF_INFO_H__ */

@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "elf_util.h"
+#include "elfinfo.h"
 
 bool ElfInfo::isELF(const uint8_t *mem)
 {

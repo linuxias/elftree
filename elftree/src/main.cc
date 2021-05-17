@@ -11,7 +11,7 @@
 
 #include "tui.h"
 #include "elftree.h"
-#include "elf_util.h"
+#include "elfinfo.h"
 
 using namespace std::string_literals;
 using namespace boost::algorithm;

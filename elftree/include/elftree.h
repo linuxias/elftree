@@ -4,7 +4,7 @@
 #include <list>
 #include <string>
 
-#include "elf_util.h"
+#include "elfinfo.h"
 
 class TreeItem {
   private:
