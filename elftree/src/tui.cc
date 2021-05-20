@@ -1,6 +1,8 @@
+#include <iostream>
 #include <string>
 #include <algorithm>
 #include <vector>
+#include <list>
 
 #include <stdlib.h>
 
@@ -9,15 +11,42 @@
 #include <menu.h>
 #include <form.h>
 
+#include "elftree.h"
 #include "tui.h"
+
+static void __travelView(std::vector<std::string> &menus, TreeItem *item)
+{
+  std::string data = item->getFileName();
+  data.insert(0, "- ");
+  for (int i = 0; i < item->getDepth() * 2; i++)
+    data.insert(0, " ");
+  menus.push_back(data);
+
+  std::list<TreeItem*> childs = item->getChildsItem();
+  if (childs.empty() == false) {
+    for (auto& child : childs)
+      __travelView(menus, child);
+  }
+}
+
+static std::vector<std::string> __convertViewToList(TreeView* view)
+{
+  std::vector<std::string> menus;
+  TreeItem* rootItem = view->getRootItem();
+  __travelView(menus, rootItem);
+
+  return menus;
+}
 
 void ElfTreeTUI::createMenu(int x, int y)
 {
+  _menus = __convertViewToList(_menuTreeView);
   int size = _menus.size();
 
   itemList = (ITEM **)calloc(size + 1, sizeof(ITEM *));
-  for (int i = 0; i < size; i++)
+  for (int i = 0; i < size; i++) {
     itemList[i] = new_item((const char*)_menus[i].c_str(), "");
+  }
 
   menuList = new_menu((ITEM **)itemList);
   menuWindow = newwin(y, x, 0, 0);
@@ -53,9 +82,9 @@ void ElfTreeTUI::initTerminal(void) {
   getmaxyx(stdscr, maxY, maxX);
 }
 
-void ElfTreeTUI::setMenuList(std::vector<std::string> menus)
+void ElfTreeTUI::setMenuList(TreeView* view)
 {
-  _menus = menus;
+  _menuTreeView = view;
 }
 
 void ElfTreeTUI::run(void)

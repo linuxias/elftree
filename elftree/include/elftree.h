@@ -8,6 +8,8 @@
 
 class TreeItem {
   private:
+    int _index;
+    int _depth;
     std::string _fileName;
     ElfInfo *_elf;
     TreeItem* _parent;
@@ -18,6 +20,7 @@ class TreeItem {
   public:
     TreeItem(std::string fileName);
     TreeItem(ElfInfo* elf);
+    std::string getFileName() { return _fileName; };
     TreeItem* getParentItem();
     void setParentItem(TreeItem *item);
     TreeItem* getNextItem();
@@ -27,6 +30,20 @@ class TreeItem {
     std::list<TreeItem*> getChildsItem();
     void addChildItem(TreeItem *child);
     ElfInfo *getElfInfo(void);
+    void setDepth(int depth) { _depth = depth; };
+    int getDepth(void) { return _depth; }
+    void setIndex(int index) { _index = index; };
+    int getIndex(void) { return _index; }
+};
+
+class TreeView {
+  private:
+    TreeItem* _root;
+    TreeItem* _current;
+
+  public:
+    TreeView(TreeItem *root) : _root(root) {};
+    TreeItem* getRootItem() { return _root; };
 };
 
 #endif /* __ELFTREE_H__ */

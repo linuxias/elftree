@@ -2,20 +2,22 @@
 #define __TUI_H__
 
 #include <string>
-#include <vector>
 
 #include <ncurses.h>
 #include <menu.h>
 #include <form.h>
 
+#include "elftree.h"
+
 class ElfTreeTUI {
   public:
     void initTerminal(void);
     void run(void);
-    void setMenuList(std::vector<std::string> menus);
+    void setMenuList(TreeView* view);
 
   private:
     std::vector<std::string> _menus;
+    TreeView* _menuTreeView;
     ITEM **itemList;
     ITEM *currentItem;
     MENU *menuList;

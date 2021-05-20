@@ -7,11 +7,13 @@
 TreeItem::TreeItem(const std::string fileName) : _fileName(fileName)
 {
   _elf = new ElfInfo(_fileName);
+  _depth = 0;
 }
 
 TreeItem::TreeItem(ElfInfo *elf) : _elf(elf)
 {
   _fileName = _elf->getFileName();
+  _depth = 0;
 }
 
 TreeItem* TreeItem::getNextItem() { return _next; }
