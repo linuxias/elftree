@@ -148,10 +148,10 @@ TreeView* ElfUtil::makeTreeView(std::string rootpath)
   return treeView;
 }
 
-TreeItem* getElfInfoByName(std::string name)
+ElfInfo* ElfUtil::getElfInfoByName(std::string name)
 {
   if (elfInfoMap.count(name) == 0)
     return nullptr;
 
-  return elfInfoMap[name];
+  return elfInfoMap[name]->getElfInfo();
 }

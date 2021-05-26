@@ -2,6 +2,8 @@
 #include <stdexcept>
 #include <list>
 #include <iostream>
+#include <iomanip>
+#include <sstream>
 
 #include <boost/filesystem.hpp>
 
@@ -144,4 +146,141 @@ ElfArchType ElfInfo::getArchType(void)
 std::string ElfInfo::getAbsolutePath(void)
 {
   return _dirPath;
+}
+
+const std::string getElfHeaderData(auto& ehdr)
+{
+  switch (ehdr->e_ident[EI_CLASS]) {
+    case ELFDATANONE:
+      return "none";
+    case ELFDATA2LSB:
+      return "2's complement, little endian";
+    case ELFDATA2MSB:
+      return "2's complement, big endian";
+    default:
+      std::stringstream ss;
+      ss << "<unknwon : " << std::hex << ehdr->e_ident[EI_CLASS] << ">";
+      return ss.str();
+  }
+}
+
+const std::string getElfHeaderClass(auto& ehdr)
+{
+  switch (ehdr->e_ident[EI_CLASS]) {
+    case ELFCLASS32:
+      return "ELF32";
+    case ELFCLASS64:
+      return "ELF64";
+  }
+  return "UNKNOWN : " + ehdr->e_ident[EI_CLASS];
+}
+
+const std::string getElfHeaderVersion(auto& ehdr)
+{
+  switch (ehdr->e_ident[EI_VERSION]) {
+    case EV_CURRENT:
+      return "current";
+    default:
+      std::stringstream ss;
+      ss << "<unknwon : " << std::hex << ehdr->e_ident[EI_VERSION] << ">";
+      return ss.str();
+  }
+}
+
+const std::string getElfHeaderOSABI(auto& ehdr)
+{
+  switch (ehdr->e_ident[EI_OSABI]) {
+    case ELFOSABI_NONE:
+      return "UNIX - System V";
+    case ELFOSABI_HPUX:
+      return "UNIX - HP-UX";
+    case ELFOSABI_LINUX:
+      return "UNIX - GNU";
+    case ELFOSABI_SOLARIS:
+      return "UNIX - Solaris";
+    case ELFOSABI_FREEBSD:
+      return "UNIX - FreeBSD";
+    case ELFOSABI_STANDALONE:
+      return "Standalone App";
+    case ELFOSABI_ARM_AEABI:
+      return "ARM EABI";
+    case ELFOSABI_ARM:
+      return "ARM";
+    default:
+      std::stringstream ss;
+      ss << "<unknwon : " << std::hex << ehdr->e_ident[EI_OSABI] << ">";
+      return ss.str();
+  }
+}
+
+const std::string getElfHeaderType(auto& ehdr)
+{
+  switch (ehdr->e_type) {
+    case ET_NONE:
+      return "NONE (None)";
+    case ET_REL:
+      return "REL (Relocatable file)";
+    case ET_EXEC:
+      return "EXEC (Executable file)";
+    case ET_DYN:
+      return "DYN (Shared object file)";
+    case ET_CORE:
+      return "CORE (core file)";
+    default:
+      std::stringstream ss;
+      if (ehdr->e_type >= ET_LOOS && ehdr->e_type <= ET_HIOS)
+        ss << "OS-specific <";
+      else if (ehdr->e_type >=ET_LOPROC && ehdr->e_type <= ET_HIPROC)
+        ss << "Processor-specific <";
+      else
+        ss << "<unknwon :";
+      ss << std::hex << ehdr->e_type << ">";
+      return ss.str();
+  }
+}
+
+const std::string getElfHeaderMachine(auto& ehdr)
+{
+  switch(ehdr->e_machine) {
+    case EM_NONE:
+      return "None";
+    case EM_ARM:
+      return "ARM";
+    case EM_AARCH64:
+      return "AArch64";
+    case EM_IA_64:
+      return "Intel IA-64";
+    case EM_X86_64:
+      return "Advanced Micro Devices X86-64";
+    default:
+      std::stringstream ss;
+      ss << "<unknwon : " << std::hex << ehdr->e_machine << ">";
+      return ss.str();
+  }
+}
+
+std::string ElfInfo::getElfHeaderFormat(void)
+{
+  std::stringstream output;
+  auto*& ehdr = _elf64.ehdr;
+  output << "File: " << _filePath << std::endl;
+  output << "Class: " << getElfHeaderClass(ehdr) << std::endl;
+  output << "Data : " << getElfHeaderData(ehdr) << std::endl;
+  output << "Version : " << getElfHeaderVersion(ehdr) << std::endl;
+  output << "OS/ABI : " << getElfHeaderOSABI(ehdr) << std::endl;
+  output << "ABI Version : " << std::to_string(ehdr->e_ident[EI_ABIVERSION]) << std::endl;
+  output << "Type : " << getElfHeaderType(ehdr) << std::endl;
+  output << "Machine : " << getElfHeaderMachine(ehdr) << std::endl;
+  output << "Entry point address : 0x" << std::hex << ehdr->e_entry << std::endl;
+  output << "Start of program header : 0x" << std::hex << ehdr->e_phoff << std::endl;
+  output << "Start of section header : 0x" << std::hex << ehdr->e_shoff << std::endl;
+  output << "Flags : 0x" << std::hex << ehdr->e_flags << std::endl;
+  output << "Size of this headers : " << std::dec << ehdr->e_ehsize << " (Byte)" << std::endl;
+  output << "Size of program headers : " << std::dec << ehdr->e_phentsize << " (Byte)" << std::endl;
+  output << "Number of program headers : " << std::dec << ehdr->e_phnum << std::endl;
+  output << "Size of section headers : " << std::dec << ehdr->e_shentsize << " (Byte)" << std::endl;
+  output << "Number of section headers : " << std::dec << ehdr->e_shnum << std::endl;
+  output << "Section header string table index : " << std::dec << ehdr->e_shstrndx << std::endl;
+
+  return output.str();
 }

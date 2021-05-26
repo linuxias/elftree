@@ -48,6 +48,7 @@ class ElfInfo {
     ElfArchType getArchType(void);
     std::list<std::string> getDependency(void);
     std::string getAbsolutePath(void);
+    std::string getElfHeaderFormat(void);
 };
 
 #endif /* __ELF_INFO_H__ */

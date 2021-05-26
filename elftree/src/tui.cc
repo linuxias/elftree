@@ -11,8 +11,14 @@
 #include <menu.h>
 #include <form.h>
 
+#include <boost/algorithm/string.hpp>
+
 #include "elftree.h"
+#include "elfutil.h"
 #include "tui.h"
+
+using namespace std::string_literals;
+using namespace boost::algorithm;
 
 static void __travelView(std::vector<std::string> &menus, TreeItem *item)
 {
@@ -87,6 +93,44 @@ void ElfTreeTUI::setMenuList(TreeView* view)
   _menuTreeView = view;
 }
 
+std::string __getItemName(ITEM*& item)
+{
+  std::string nameStr = item_name(item);
+  nameStr = nameStr.substr(nameStr.find("-") + 1, nameStr.length());
+  trim(nameStr);
+
+  return nameStr;
+}
+
+std::vector<std::string> splitStringByLine(std::string s) {
+  std::vector<std::string> v;
+	int start = 0;
+	int d = s.find("\n");
+	while (d != -1){
+		v.push_back(s.substr(start, d - start));
+		start = d + 1;
+		d = s.find("\n", start);
+	}
+	v.push_back(s.substr(start, d - start));
+
+	return v;
+}
+
+void printStringToWindow(ITEM*& currentItem, WINDOW*& window)
+{
+  std::string curItemName = __getItemName(currentItem);
+  ElfInfo* elfInfo = ElfUtil::getElfInfoByName(curItemName);
+  wmove(window, 1, 1);
+  wclrtobot(window);
+  box(window, 0, 0);
+
+  int i = 1;
+  for (auto& str : splitStringByLine(elfInfo->getElfHeaderFormat()))
+    mvwprintw(window, i++, 2, "%s", str.c_str());
+
+  wrefresh(window);
+}
+
 void ElfTreeTUI::run(void)
 {
   createMenu(maxX / 3, maxY);
@@ -104,15 +148,9 @@ void ElfTreeTUI::run(void)
       case KEY_RIGHT: // unfolded
       case KEY_LEFT:  // folded
       case 10: // Enter Keycode
-      default:
+        currentItem = current_item(menuList);
+        printStringToWindow(currentItem, infoWindow);
         break;
-        /*
-        wmove(infoWindow, 1, 1);
-        wclrtobot(infoWindow);
-        box(infoWindow, 0, 0);
-        mvwprintw(infoWindow, 1, 1, "%d", c);
-        wrefresh(infoWindow);
-        */
     }
     wrefresh(menuWindow);
   }
