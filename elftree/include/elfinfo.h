@@ -49,6 +49,7 @@ class ElfInfo {
     std::list<std::string> getDependency(void);
     std::string getAbsolutePath(void);
     std::string getElfHeaderFormat(void);
+    std::string getProgramHeaderFormat(void);
 };
 
 #endif /* __ELF_INFO_H__ */

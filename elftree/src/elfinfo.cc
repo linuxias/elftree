@@ -284,3 +284,96 @@ std::string ElfInfo::getElfHeaderFormat(void)
 
   return output.str();
 }
+
+const std::string getSegmentTypeName(auto* phdr)
+{
+  switch(phdr->p_type) {
+    case PT_PHDR:
+      return "PHDR";
+    case PT_INTERP:
+      return "INTERP";
+    case PT_LOAD:
+      return "LOAD";
+    case PT_DYNAMIC:
+      return "DYNAMIC";
+    case PT_NOTE:
+      return "NOTE";
+    case PT_TLS:
+      return "TLS";
+    case PT_GNU_EH_FRAME:
+      return "GNU_EH_FRAME";
+    case PT_GNU_STACK:
+      return "GNU_STACK";
+    case PT_GNU_RELRO:
+      return "GNU_RELRO";
+    default:
+      std::stringstream ss;
+      ss << "<unknwon : " << phdr->p_type << ">";
+      return ss.str();
+  }
+}
+
+const std::string getSegmentFlags(auto* phdr)
+{
+  std::string flags = "";
+
+  if (phdr->p_flags & PF_R)
+    flags += "R";
+  else
+    flags += " ";
+  if (phdr->p_flags & PF_W)
+    flags += "W";
+  else
+    flags += " ";
+  if (phdr->p_flags & PF_X)
+    flags += "E";
+  else
+    flags += " ";
+
+  return flags;
+}
+
+
+std::string ElfInfo::getProgramHeaderFormat(void)
+{
+  std::stringstream output;
+  auto* phdr = _elf64.phdr;
+
+  output << "Program Header : " << std::endl;
+  output << std::setw(6) << "Type";
+  output << std::setw(17) << "Offset";
+  output << std::setw(21) << "VirtAddr";
+  output << std::setw(19) << "PhysAddr";
+  output << std::endl;
+  output << std::setw(24) << "FileSiz";
+  output << std::setw(18) << "MemSiz";
+  output << std::setw(17) << "Flag";
+  output << std::setw(7) << "Align";
+  output << std::endl;
+  for (int i = 0; i < _elf64.ehdr->e_phnum; i++) {
+    output << "  ";
+    output << std::setw(14) << std::setfill(' ') << std::left;
+    output << getSegmentTypeName(&phdr[i]);
+    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::hex <<phdr[i].p_offset;
+    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::hex << phdr[i].p_vaddr;
+    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::hex << phdr[i].p_paddr;
+    output << std::endl;
+    output << "  ";
+    output << std::setw(14) << std::setfill(' ') <<" " << std::right;
+    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::hex <<phdr[i].p_filesz;
+    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::hex << phdr[i].p_memsz;
+    output << std::setw(5) << std::setfill(' ') << std::right;
+    output << getSegmentFlags(&phdr[i]);
+    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill(' ') << std::left;
+    output << std::hex << phdr[i].p_align;
+    output << std::endl;
+  }
+
+  return output.str();
+}
+

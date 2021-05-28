@@ -128,6 +128,11 @@ void printStringToWindow(ITEM*& currentItem, WINDOW*& window)
   for (auto& str : splitStringByLine(elfInfo->getElfHeaderFormat()))
     mvwprintw(window, i++, 2, "%s", str.c_str());
 
+  mvwprintw(window, i++, 2, "%s", "\n");
+
+  for (auto& str : splitStringByLine(elfInfo->getProgramHeaderFormat()))
+    mvwprintw(window, i++, 2, "%s", str.c_str());
+
   wrefresh(window);
 }
 
@@ -155,3 +160,4 @@ void ElfTreeTUI::run(void)
     wrefresh(menuWindow);
   }
 }
+
