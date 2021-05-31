@@ -14,23 +14,5 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
-
-int main(int argc, char **argv) {
-  int ret = -1;
-
-  try {
-    testing::InitGoogleTest(&argc, argv);
-  } catch (...) {
-    std::cout << "Exception occurred" << std::endl;
-  }
-
-  try {
-    ret = RUN_ALL_TESTS();
-  } catch (const ::testing::internal::GoogleTestFailureException& e) {
-    ret = -1;
-    std::cout << "GoogleTestFailureException was thrown:" << e.what() << std::endl;
-  }
-
-  return ret;
-}
+#define APPROVALS_GOOGLETEST // This tells Approval Tests to provide a main() - only do this in one cpp file
+#include "ApprovalTests.hpp"

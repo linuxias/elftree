@@ -1,6 +1,7 @@
 #ifndef __ELF_INFO_H__
 #define __ELF_INFO_H__
 
+#include <list>
 #include <string>
 #include <vector>
 

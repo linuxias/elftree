@@ -8,7 +8,7 @@ ADD_DEFINITIONS("-DPREFIX=\"${PREFIX}\"")
 
 # compiler flags
 SET(EXTRA_CXXFLAGS "${EXTRA_CXXFLAGS}")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EXTRA_CFLAGS} -std=c++11 -fPIE")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EXTRA_CFLAGS} -std=c++14 -fPIE")
 SET(CMAKE_EXE_LINKER_FLAGS "-ldl")
 SET(CMAKE_SKIP_BUILD_RPATH TRUE)
 
@@ -18,11 +18,14 @@ INCLUDE(ApplyPkgConfig)
 PKG_CHECK_MODULES(NCURSES_DEPS REQUIRED ncurses)
 PKG_CHECK_MODULES(NCURSES_MENU_DEPS REQUIRED menu)
 PKG_CHECK_MODULES(NCURSES_FORM_DEPS REQUIRED form)
+PKG_CHECK_MODULES(GTEST_DEPS REQUIRED gtest)
 FIND_PACKAGE(Boost REQUIRED COMPONENTS system filesystem regex program_options)
 
 #################################################################
 SET(TARGET_ELFTREE "elftree")
 SET(TARGET_ELFTREE_UNIT_TEST "elftree-unit-test")
+SET(ELFTREE_STATIC_LIB "elf_static")
 #################################################################
 ADD_SUBDIRECTORY(elftree)
-#ADD_SUBDIRECTORY(test)
+ADD_SUBDIRECTORY(lib)
+ADD_SUBDIRECTORY(test)

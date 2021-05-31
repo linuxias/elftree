@@ -78,10 +78,8 @@ ElfInfo::ElfInfo(const std::string filePath) :
 {
   errno = 0;
   _fd = open(_filePath.c_str(), O_RDONLY);
-  if (errno < 0 || _fd == -1) {
-    perror("open");
-    exit(-1);
-  }
+  if (errno < 0 || _fd == -1)
+    throw std::invalid_argument("This file is not exists");
 
   boost::filesystem::path p(filePath);
   _dirPath = p.parent_path().string();
@@ -90,11 +88,26 @@ ElfInfo::ElfInfo(const std::string filePath) :
   _dirPath = boost::filesystem::absolute(_dirPath).string();
 
   loadMemoryMap();
-  if (isELF(_mem) == false) {
+  if (isELF(_mem) == false)
     throw std::invalid_argument("This file is not ELF");
-  }
 
   loadElfInfo();
+}
+
+ElfInfo::~ElfInfo() {
+  if (_mem != nullptr) {
+    struct stat st;
+    errno = 0;
+    if (fstat(_fd, &st) < 0) {
+      perror("fstat");
+      exit(-1);
+    }
+
+    munmap(_mem, st.st_size);
+  }
+
+  if (_fd)
+    close(_fd);
 }
 
 std::list<std::string> ElfInfo::getDependency(void) {
@@ -126,11 +139,6 @@ std::list<std::string> ElfInfo::getDependency(void) {
   }
 
   return deps;
-}
-
-ElfInfo::~ElfInfo(void) {
-  if (_fd)
-    close(_fd);
 }
 
 std::string ElfInfo::getFileName(void)
@@ -263,7 +271,7 @@ std::string ElfInfo::getElfHeaderFormat(void)
 {
   std::stringstream output;
   auto*& ehdr = _elf64.ehdr;
-  output << "File: " << _filePath << std::endl;
+  output << "File: " << _fileName << std::endl;
   output << "Class: " << getElfHeaderClass(ehdr) << std::endl;
   output << "Data : " << getElfHeaderData(ehdr) << std::endl;
   output << "Version : " << getElfHeaderVersion(ehdr) << std::endl;
