@@ -24,6 +24,9 @@ This tool is to display so dependency as tree.
 %cmake .
 make %{?jobs:-j%jobs}
 
+%check
+cd test && ctest -V
+
 %install
 %make_install
 
