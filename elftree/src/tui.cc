@@ -73,10 +73,24 @@ void ElfTreeTUI::createMenu(int x, int y)
   wrefresh(menuWindow);
 }
 
+void ElfTreeTUI::clearMenu(void)
+{
+  unpost_menu(menuList);
+  for (unsigned int i = 0; i < _menus.size(); i++)
+    free_item(itemList[i]);
+  free_menu(menuList);
+  delwin(menuWindow);
+}
+
 void ElfTreeTUI::createInfoWindow(int x, int y) {
 	infoWindow = newwin(y, x - 1, 0, maxX - x);
 	box(infoWindow, 0, 0);
 	wrefresh(infoWindow);
+}
+
+void ElfTreeTUI::clearInfoWindow(void)
+{
+  delwin(infoWindow);
 }
 
 void ElfTreeTUI::initTerminal(void) {
@@ -86,6 +100,13 @@ void ElfTreeTUI::initTerminal(void) {
   keypad(stdscr, TRUE);
 
   getmaxyx(stdscr, maxY, maxX);
+}
+
+void ElfTreeTUI::clearTerminal(void)
+{
+  clearMenu();
+  clearInfoWindow();
+  endwin();
 }
 
 void ElfTreeTUI::setMenuList(TreeView* view)

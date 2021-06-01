@@ -12,6 +12,7 @@
 class ElfTreeTUI {
   public:
     void initTerminal(void);
+    void clearTerminal(void);
     void run(void);
     void setMenuList(TreeView* view);
 
@@ -25,7 +26,9 @@ class ElfTreeTUI {
     WINDOW *infoWindow;
     int maxX, maxY;
     void createMenu(int x, int y);
+    void clearMenu(void);
     void createInfoWindow(int x, int y);
+    void clearInfoWindow(void);
 };
 
 #endif /* __TUI_H__ */

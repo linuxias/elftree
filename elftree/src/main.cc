@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
   tui.initTerminal();
   tui.setMenuList(view);
   tui.run();
+  tui.clearTerminal();
 
   return 0;
 }
