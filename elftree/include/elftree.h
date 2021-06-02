@@ -10,6 +10,7 @@ class TreeItem {
   private:
     int _index;
     int _depth;
+    bool _folded;
     std::string _fileName;
     ElfInfo *_elf;
     TreeItem* _parent;
@@ -34,16 +35,22 @@ class TreeItem {
     int getDepth(void) { return _depth; }
     void setIndex(int index) { _index = index; };
     int getIndex(void) { return _index; }
+    void setFolded(bool fold) { _folded = fold; };
+    bool isFolded(void) { return _folded; };
+    bool hasChilds(void) { return !_childs.empty(); };
 };
 
 class TreeView {
   private:
+    unsigned int _cntOfNodes;
     TreeItem* _root;
     TreeItem* _current;
 
   public:
     TreeView(TreeItem *root) : _root(root) {};
     TreeItem* getRootItem() { return _root; };
+    unsigned int getCountOfNodes(void) { return _cntOfNodes; };
+    void setCountOfNodes(unsigned int count) { _cntOfNodes = count; };
 };
 
 #endif /* __ELFTREE_H__ */

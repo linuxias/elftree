@@ -8,12 +8,14 @@ TreeItem::TreeItem(const std::string fileName) : _fileName(fileName)
 {
   _elf = new ElfInfo(_fileName);
   _depth = 0;
+  _folded = false;
 }
 
 TreeItem::TreeItem(ElfInfo *elf) : _elf(elf)
 {
   _fileName = _elf->getFileName();
   _depth = 0;
+  _folded = false;
 }
 
 TreeItem* TreeItem::getNextItem() { return _next; }

@@ -145,6 +145,7 @@ TreeView* ElfUtil::makeTreeView(std::string rootpath)
   }
 
   TreeView* treeView = new TreeView(rootItem);
+  treeView->setCountOfNodes(idx);
   return treeView;
 }
 

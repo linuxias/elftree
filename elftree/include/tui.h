@@ -29,6 +29,9 @@ class ElfTreeTUI {
     void clearMenu(void);
     void createInfoWindow(int x, int y);
     void clearInfoWindow(void);
+    void convertViewToItems(TreeView* view);
+    void travelTree(TreeItem*& item, int* index);
+    void toggleMenu(bool fold);
 };
 
 #endif /* __TUI_H__ */

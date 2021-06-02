@@ -20,40 +20,45 @@
 using namespace std::string_literals;
 using namespace boost::algorithm;
 
-static void __travelView(std::vector<std::string> &menus, TreeItem *item)
+void ElfTreeTUI::travelTree(TreeItem*& item, int* index)
 {
   std::string data = item->getFileName();
-  data.insert(0, "- ");
+  if (item->isFolded())
+    data.insert(0, "+ ");
+  else
+    data.insert(0, "- ");
   for (int i = 0; i < item->getDepth() * 2; i++)
     data.insert(0, " ");
-  menus.push_back(data);
+
+  itemList[*index] = new_item((const char*)(strdup(data.c_str())), "");
+  set_item_userptr(itemList[*index], item);
+
+  if (item->isFolded() == true)
+    return;
 
   std::list<TreeItem*> childs = item->getChildsItem();
   if (childs.empty() == false) {
-    for (auto& child : childs)
-      __travelView(menus, child);
+    for (TreeItem* child : childs) {
+      *index = *index + 1;
+     travelTree(child, index);
+    }
   }
 }
 
-static std::vector<std::string> __convertViewToList(TreeView* view)
+void ElfTreeTUI::convertViewToItems(TreeView* view)
 {
-  std::vector<std::string> menus;
   TreeItem* rootItem = view->getRootItem();
-  __travelView(menus, rootItem);
+  int index = 0;
 
-  return menus;
+  travelTree(rootItem,  &index);
 }
+
 
 void ElfTreeTUI::createMenu(int x, int y)
 {
-  _menus = __convertViewToList(_menuTreeView);
-  int size = _menus.size();
-
+  int size = _menuTreeView->getCountOfNodes();
   itemList = (ITEM **)calloc(size + 1, sizeof(ITEM *));
-  for (int i = 0; i < size; i++) {
-    itemList[i] = new_item((const char*)_menus[i].c_str(), "");
-  }
-
+  convertViewToItems(_menuTreeView);
   menuList = new_menu((ITEM **)itemList);
   menuWindow = newwin(y, x, 0, 0);
 
@@ -117,7 +122,12 @@ void ElfTreeTUI::setMenuList(TreeView* view)
 std::string __getItemName(ITEM*& item)
 {
   std::string nameStr = item_name(item);
-  nameStr = nameStr.substr(nameStr.find("-") + 1, nameStr.length());
+  TreeItem* treeItem = (TreeItem*)item_userptr(item);
+  if (treeItem->isFolded())
+    nameStr = nameStr.substr(nameStr.find("+") + 1, nameStr.length());
+  else
+    nameStr = nameStr.substr(nameStr.find("-") + 1, nameStr.length());
+
   trim(nameStr);
 
   return nameStr;
@@ -157,6 +167,25 @@ void printStringToWindow(ITEM*& currentItem, WINDOW*& window)
   wrefresh(window);
 }
 
+void ElfTreeTUI::toggleMenu(bool fold)
+{
+  int pos;
+  TreeItem* currentTreeItem;
+
+  currentItem = current_item(menuList);
+  currentTreeItem = (TreeItem*)item_userptr(currentItem);
+  if (fold == true && (currentTreeItem->isFolded() == true || currentTreeItem->hasChilds() == false))
+      return;
+  else if (fold == false && currentTreeItem->isFolded() == false)
+      return;
+
+  pos = item_index(currentItem);
+  currentTreeItem->setFolded(fold);
+  clearMenu();
+  createMenu(maxX / 3, maxY);
+  set_current_item(menuList, itemList[pos]);
+}
+
 void ElfTreeTUI::run(void)
 {
   createMenu(maxX / 3, maxY);
@@ -172,7 +201,11 @@ void ElfTreeTUI::run(void)
         menu_driver(menuList, REQ_UP_ITEM);
         break;
       case KEY_RIGHT: // unfolded
+        toggleMenu(false);
+        break;
       case KEY_LEFT:  // folded
+        toggleMenu(true);
+        break;
       case 10: // Enter Keycode
         currentItem = current_item(menuList);
         printStringToWindow(currentItem, infoWindow);
