@@ -121,9 +121,12 @@ TreeView* ElfUtil::makeTreeView(std::string rootpath)
         if (__check_file_is_exists(filepath) == false)
           continue;
 
+        if (filepath.find("ld-linux") != std::string::npos)
+          continue;
+
         ElfInfo *tmpInfo = new ElfInfo(filepath);
         std::string tmpFileName = tmpInfo->getFileName();
-        if (rootType != tmpInfo->getArchType() || __has_prefix_substr(tmpFileName, "ld-linux-")) {
+        if (rootType != tmpInfo->getArchType()) {
           delete tmpInfo;
           continue;
         }
