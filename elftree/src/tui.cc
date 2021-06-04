@@ -71,10 +71,11 @@ void ElfTreeTUI::createMenu(int x, int y)
   /* Set menu mark to the string " * " */
   set_menu_mark(menuList, " * ");
 
-  box(menuWindow, 0, 0);
+
   refresh();
 
   post_menu(menuList);
+  box(menuWindow, 0, 0);
   wrefresh(menuWindow);
 }
 
@@ -211,6 +212,7 @@ void ElfTreeTUI::run(void)
         printStringToWindow(currentItem, infoWindow);
         break;
     }
+    box(menuWindow, 0, 0);
     wrefresh(menuWindow);
   }
 }
