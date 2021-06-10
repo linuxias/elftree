@@ -95,7 +95,13 @@ static std::list<std::string> __get_libpath_list(void)
 TreeView* ElfUtil::makeTreeView(std::string rootpath)
 {
   int idx = 0;
-  TreeItem* rootItem = new TreeItem(rootpath);
+  TreeItem* rootItem = nullptr;
+  try {
+    rootItem = new TreeItem(rootpath);
+  } catch (const std::exception &e) {
+    throw;
+  }
+
   std::queue<TreeItem *> treeQ;
   treeQ.push(rootItem);
 
@@ -115,7 +121,6 @@ TreeView* ElfUtil::makeTreeView(std::string rootpath)
     std::list<std::string> childs_string = parentInfo->getDependency();
 
     for (auto& child_string : childs_string) {
-      TreeItem* prevItem = nullptr;
       for (auto& dirpath : libpaths) {
         std::string filepath = dirpath + "/" + child_string;
         if (__check_file_is_exists(filepath) == false)
@@ -131,18 +136,18 @@ TreeView* ElfUtil::makeTreeView(std::string rootpath)
           continue;
         }
 
-        TreeItem* childItem = new TreeItem(tmpInfo);
+       TreeItem* childItem = nullptr;
+        try {
+          childItem = new TreeItem(tmpInfo);
+        } catch (const std::exception &e) {
+          delete rootItem;
+          throw;
+        }
+
         childItem->setDepth(parentItem->getDepth() + 1);
         childItem->setIndex(++idx);
         parentItem->addChildItem(childItem);
-        childItem->setParentItem(parentItem);
         treeQ.push(childItem);
-
-        if (prevItem != nullptr) {
-          childItem->setPrevItem(prevItem);
-          prevItem->setNextItem(childItem);
-        }
-        prevItem = childItem;
       }
     }
   }

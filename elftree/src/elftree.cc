@@ -4,54 +4,48 @@
 
 #include "elftree.h"
 
-TreeItem::TreeItem(const std::string fileName) : _fileName(fileName)
+TreeItem::TreeItem(const std::string fileName) :
+  _fileName(fileName),
+  _index(0),
+  _depth(0),
+  _folded(false)
 {
   _elf = new ElfInfo(_fileName);
-  _depth = 0;
-  _folded = false;
 }
 
-TreeItem::TreeItem(ElfInfo *elf) : _elf(elf)
+TreeItem::TreeItem(ElfInfo *elf) : _elf(elf),
+  _index(0),
+  _depth(0),
+  _folded(false)
 {
   _fileName = _elf->getFileName();
-  _depth = 0;
-  _folded = false;
 }
 
-TreeItem* TreeItem::getNextItem() { return _next; }
+TreeItem::~TreeItem()
+{
+  for (TreeItem* child : _children)
+    delete child;
 
-TreeItem* TreeItem::getPrevItem() { return _prev; }
+  if (_elf != nullptr)
+    delete _elf;
+}
 
-TreeItem* TreeItem::getParentItem() { return _parent; }
-
-std::list<TreeItem*> TreeItem::getChildsItem() { return _childs; }
+std::list<TreeItem*> TreeItem::getChildren() { return _children; }
 
 ElfInfo *TreeItem::getElfInfo(void) { return _elf; }
-
-void TreeItem::setParentItem(TreeItem *item)
-{
-  if (item == nullptr)
-    throw std::invalid_argument("Child is nullptr");
-  _parent = item;
-}
-
-void TreeItem::setNextItem(TreeItem *item)
-{
-  if (item == nullptr)
-    throw std::invalid_argument("Child is nullptr");
-  _next = item;
-}
-
-void TreeItem::setPrevItem(TreeItem *item)
-{
-  if (item == nullptr)
-    throw std::invalid_argument("Child is nullptr");
-  _prev = item;
-}
 
 void TreeItem::addChildItem(TreeItem *child)
 {
   if (child == nullptr)
     throw std::invalid_argument("Child is nullptr");
-  _childs.push_back(child);
+  _children.push_back(child);
 }
+
+TreeView::~TreeView() {
+  if (_root == nullptr)
+    return;
+
+  delete _root;
+}
+
+

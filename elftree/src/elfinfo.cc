@@ -78,8 +78,13 @@ ElfInfo::ElfInfo(const std::string filePath) :
 {
   errno = 0;
   _fd = open(_filePath.c_str(), O_RDONLY);
-  if (errno < 0 || _fd == -1)
-    throw std::invalid_argument("This file is not exists");
+  if (errno < 0 || _fd == -1) {
+    if (errno == EMFILE)
+      throw std::ios_base::failure("Failed to create elfinfo : "
+          + std::string(strerror(errno)));
+    else
+      throw std::invalid_argument("This file is not exists");
+  }
 
   boost::filesystem::path p(filePath);
   _dirPath = p.parent_path().string();
@@ -323,22 +328,16 @@ const std::string getSegmentTypeName(auto* phdr)
 
 const std::string getSegmentFlags(auto* phdr)
 {
-  std::string flags = "";
+  char flags[4] = "   ";
 
   if (phdr->p_flags & PF_R)
-    flags += "R";
-  else
-    flags += " ";
+    flags[0] = 'R';
   if (phdr->p_flags & PF_W)
-    flags += "W";
-  else
-    flags += " ";
+    flags[1] = 'W';
   if (phdr->p_flags & PF_X)
-    flags += "E";
-  else
-    flags += " ";
+    flags[2] = 'E';
 
-  return flags;
+  return std::string(flags);
 }
 
 
@@ -384,4 +383,3 @@ std::string ElfInfo::getProgramHeaderFormat(void)
 
   return output.str();
 }
-

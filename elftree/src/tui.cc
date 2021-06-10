@@ -36,9 +36,9 @@ void ElfTreeTUI::travelTree(TreeItem*& item, int* index)
   if (item->isFolded() == true)
     return;
 
-  std::list<TreeItem*> childs = item->getChildsItem();
-  if (childs.empty() == false) {
-    for (TreeItem* child : childs) {
+  std::list<TreeItem*> children = item->getChildren();
+  if (children.empty() == false) {
+    for (TreeItem* child : children) {
       *index = *index + 1;
      travelTree(child, index);
     }
@@ -71,9 +71,7 @@ void ElfTreeTUI::createMenu(int x, int y)
   /* Set menu mark to the string " * " */
   set_menu_mark(menuList, " * ");
 
-
   refresh();
-
   post_menu(menuList);
   box(menuWindow, 0, 0);
   wrefresh(menuWindow);
@@ -82,8 +80,6 @@ void ElfTreeTUI::createMenu(int x, int y)
 void ElfTreeTUI::clearMenu(void)
 {
   unpost_menu(menuList);
-  for (unsigned int i = 0; i < _menus.size(); i++)
-    free_item(itemList[i]);
   free_menu(menuList);
   delwin(menuWindow);
 }
@@ -175,7 +171,7 @@ void ElfTreeTUI::toggleMenu(bool fold)
 
   currentItem = current_item(menuList);
   currentTreeItem = (TreeItem*)item_userptr(currentItem);
-  if (fold == true && (currentTreeItem->isFolded() == true || currentTreeItem->hasChilds() == false))
+  if (fold == true && (currentTreeItem->isFolded() == true || currentTreeItem->hasChildren() == false))
       return;
   else if (fold == false && currentTreeItem->isFolded() == false)
       return;
@@ -216,4 +212,3 @@ void ElfTreeTUI::run(void)
     wrefresh(menuWindow);
   }
 }
-

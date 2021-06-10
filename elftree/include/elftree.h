@@ -13,22 +13,14 @@ class TreeItem {
     bool _folded;
     std::string _fileName;
     ElfInfo *_elf;
-    TreeItem* _parent;
-    TreeItem* _prev;
-    TreeItem* _next;
-    std::list<TreeItem*> _childs;
+    std::list<TreeItem*> _children;
 
   public:
     TreeItem(std::string fileName);
     TreeItem(ElfInfo* elf);
+    ~TreeItem();
     std::string getFileName() { return _fileName; };
-    TreeItem* getParentItem();
-    void setParentItem(TreeItem *item);
-    TreeItem* getNextItem();
-    void setNextItem(TreeItem *item);
-    TreeItem* getPrevItem();
-    void setPrevItem(TreeItem *item);
-    std::list<TreeItem*> getChildsItem();
+    std::list<TreeItem*> getChildren();
     void addChildItem(TreeItem *child);
     ElfInfo *getElfInfo(void);
     void setDepth(int depth) { _depth = depth; };
@@ -37,7 +29,7 @@ class TreeItem {
     int getIndex(void) { return _index; }
     void setFolded(bool fold) { _folded = fold; };
     bool isFolded(void) { return _folded; };
-    bool hasChilds(void) { return !_childs.empty(); };
+    bool hasChildren(void) { return !_children.empty(); };
 };
 
 class TreeView {
@@ -47,7 +39,8 @@ class TreeView {
     TreeItem* _current;
 
   public:
-    TreeView(TreeItem *root) : _root(root) {};
+    TreeView(TreeItem *root) : _root(root), _cntOfNodes(0), _current(nullptr) {};
+    ~TreeView();
     TreeItem* getRootItem() { return _root; };
     unsigned int getCountOfNodes(void) { return _cntOfNodes; };
     void setCountOfNodes(unsigned int count) { _cntOfNodes = count; };

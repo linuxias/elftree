@@ -39,7 +39,13 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-  TreeView* view = ElfUtil::makeTreeView(fileName);
+  TreeView* view = nullptr;
+  try {
+    view = ElfUtil::makeTreeView(fileName);
+  } catch (const std::exception &e) {
+    std::cerr << "Failed to make TreeView : " << e.what() << std::endl;
+    exit(-1);
+  }
 
   ElfTreeTUI tui;
   tui.initTerminal();

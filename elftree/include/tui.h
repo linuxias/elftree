@@ -2,6 +2,7 @@
 #define __TUI_H__
 
 #include <string>
+#include <vector>
 
 #include <ncurses.h>
 #include <menu.h>
