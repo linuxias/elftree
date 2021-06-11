@@ -17,7 +17,7 @@
 using namespace std::string_literals;
 using namespace boost::algorithm;
 
-static std::map<std::string, TreeItem*> elfInfoMap;
+static std::map<std::string, ElfInfo*> elfInfoMap;
 
 static bool __check_file_is_exists(std::string fileName)
 {
@@ -103,11 +103,11 @@ bool __is_valid_path(std::string filepath)
   return true;
 }
 
-void __insert_item_in_map(TreeItem* item)
+void __insert_info_in_map(ElfInfo* info)
 {
-  std::string parentName = item->getFileName();
-  if (elfInfoMap.count(parentName) == 0)
-    elfInfoMap[parentName] = item;
+  std::string name = info->getFileName();
+  if (elfInfoMap.count(name) == 0)
+    elfInfoMap[name] = info;
 }
 
 void __make_children_item(TreeItem*& parentItem, const ElfArchType rootType, int* idx)
@@ -123,19 +123,27 @@ void __make_children_item(TreeItem*& parentItem, const ElfArchType rootType, int
         continue;
 
       TreeItem* childItem = nullptr;
-      try {
-        childItem = new TreeItem(filepath);
-        if (rootType != childItem->getElfInfo()->getArchType()) {
-          delete childItem;
+      if (elfInfoMap.find(child_string) != elfInfoMap.end()) {
+        ElfInfo* childInfo = elfInfoMap[child_string];
+        childItem = new TreeItem(childInfo);
+      } else {
+        ElfInfo* childInfo = new ElfInfo(filepath);
+        if (rootType != childInfo->getArchType()) {
+          delete childInfo;
           continue;
         }
-      } catch (const std::exception &e) {
-        throw;
+
+        try {
+          childItem = new TreeItem(childInfo);
+        } catch (const std::exception &e) {
+          throw;
+        }
       }
 
       childItem->setDepth(parentItem->getDepth() + 1);
       childItem->setIndex(++*idx);
       parentItem->addChildItem(childItem);
+      break;
     }
   }
 }
@@ -154,13 +162,15 @@ TreeView* ElfUtil::makeTreeView(std::string rootpath)
   treeQ.push(rootItem);
 
   ElfInfo* rootInfo = rootItem->getElfInfo();
+  __insert_info_in_map(rootInfo);
+
   ElfArchType rootType = rootInfo->getArchType();
 
   while (treeQ.empty() == false) {
     TreeItem* parentItem = treeQ.front();
     treeQ.pop();
 
-    __insert_item_in_map(parentItem);
+    __insert_info_in_map(parentItem->getElfInfo());
 
     try {
       __make_children_item(parentItem, rootType, &idx);
@@ -183,5 +193,5 @@ ElfInfo* ElfUtil::getElfInfoByName(std::string name)
   if (elfInfoMap.count(name) == 0)
     return nullptr;
 
-  return elfInfoMap[name]->getElfInfo();
+  return elfInfoMap[name];
 }
