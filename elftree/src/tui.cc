@@ -56,8 +56,8 @@ void ElfTreeTUI::convertViewToItems(TreeView* view)
 
 void ElfTreeTUI::createMenu(int x, int y)
 {
-  int size = _menuTreeView->getCountOfNodes();
-  itemList = (ITEM **)calloc(size + 1, sizeof(ITEM *));
+  int size = _menuTreeView->getCountOfNodes() + 1;
+  itemList = (ITEM **)calloc(size, sizeof(ITEM *));
   convertViewToItems(_menuTreeView);
   menuList = new_menu((ITEM **)itemList);
   menuWindow = newwin(y, x, 0, 0);

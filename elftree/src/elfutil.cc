@@ -92,6 +92,54 @@ static std::list<std::string> __get_libpath_list(void)
   return pathList;
 }
 
+bool __is_valid_path(std::string filepath)
+{
+  if (__check_file_is_exists(filepath) == false)
+    return false;
+
+  if (filepath.find("ld-linux") != std::string::npos)
+    return false;
+
+  return true;
+}
+
+void __insert_item_in_map(TreeItem* item)
+{
+  std::string parentName = item->getFileName();
+  if (elfInfoMap.count(parentName) == 0)
+    elfInfoMap[parentName] = item;
+}
+
+void __make_children_item(TreeItem*& parentItem, const ElfArchType rootType, int* idx)
+{
+  ElfInfo* parentInfo = parentItem->getElfInfo();
+  std::list<std::string> childs_string = parentInfo->getDependency();
+  std::list<std::string> libpaths = __get_libpath_list();
+
+  for (auto& child_string : childs_string) {
+    for (auto& dirpath : libpaths) {
+      std::string filepath = dirpath + "/" + child_string;
+      if (__is_valid_path(filepath) == false)
+        continue;
+
+      TreeItem* childItem = nullptr;
+      try {
+        childItem = new TreeItem(filepath);
+        if (rootType != childItem->getElfInfo()->getArchType()) {
+          delete childItem;
+          continue;
+        }
+      } catch (const std::exception &e) {
+        throw;
+      }
+
+      childItem->setDepth(parentItem->getDepth() + 1);
+      childItem->setIndex(++*idx);
+      parentItem->addChildItem(childItem);
+    }
+  }
+}
+
 TreeView* ElfUtil::makeTreeView(std::string rootpath)
 {
   int idx = 0;
@@ -105,7 +153,6 @@ TreeView* ElfUtil::makeTreeView(std::string rootpath)
   std::queue<TreeItem *> treeQ;
   treeQ.push(rootItem);
 
-  std::list<std::string> libpaths = __get_libpath_list();
   ElfInfo* rootInfo = rootItem->getElfInfo();
   ElfArchType rootType = rootInfo->getArchType();
 
@@ -113,43 +160,17 @@ TreeView* ElfUtil::makeTreeView(std::string rootpath)
     TreeItem* parentItem = treeQ.front();
     treeQ.pop();
 
-    std::string parentName = parentItem->getFileName();
-    if (elfInfoMap.count(parentName) == 0)
-      elfInfoMap[parentName] = parentItem;
+    __insert_item_in_map(parentItem);
 
-    ElfInfo* parentInfo = parentItem->getElfInfo();
-    std::list<std::string> childs_string = parentInfo->getDependency();
-
-    for (auto& child_string : childs_string) {
-      for (auto& dirpath : libpaths) {
-        std::string filepath = dirpath + "/" + child_string;
-        if (__check_file_is_exists(filepath) == false)
-          continue;
-
-        if (filepath.find("ld-linux") != std::string::npos)
-          continue;
-
-        ElfInfo *tmpInfo = new ElfInfo(filepath);
-        std::string tmpFileName = tmpInfo->getFileName();
-        if (rootType != tmpInfo->getArchType()) {
-          delete tmpInfo;
-          continue;
-        }
-
-       TreeItem* childItem = nullptr;
-        try {
-          childItem = new TreeItem(tmpInfo);
-        } catch (const std::exception &e) {
-          delete rootItem;
-          throw;
-        }
-
-        childItem->setDepth(parentItem->getDepth() + 1);
-        childItem->setIndex(++idx);
-        parentItem->addChildItem(childItem);
-        treeQ.push(childItem);
-      }
+    try {
+      __make_children_item(parentItem, rootType, &idx);
+    } catch (const std::exception &e) {
+      delete rootItem;
+      throw;
     }
+    std::list<TreeItem*> children = parentItem->getChildren();
+    for (TreeItem* child : children)
+      treeQ.push(child);
   }
 
   TreeView* treeView = new TreeView(rootItem);
