@@ -161,7 +161,8 @@ std::string ElfInfo::getAbsolutePath(void)
   return _dirPath;
 }
 
-const std::string getElfHeaderData(auto& ehdr)
+template <typename T>
+const std::string getElfHeaderData(T& ehdr)
 {
   switch (ehdr->e_ident[EI_CLASS]) {
     case ELFDATANONE:
@@ -177,7 +178,8 @@ const std::string getElfHeaderData(auto& ehdr)
   }
 }
 
-const std::string getElfHeaderClass(auto& ehdr)
+template <typename T>
+const std::string getElfHeaderClass(T& ehdr)
 {
   switch (ehdr->e_ident[EI_CLASS]) {
     case ELFCLASS32:
@@ -188,7 +190,8 @@ const std::string getElfHeaderClass(auto& ehdr)
   return "UNKNOWN : " + ehdr->e_ident[EI_CLASS];
 }
 
-const std::string getElfHeaderVersion(auto& ehdr)
+template <typename T>
+const std::string getElfHeaderVersion(T& ehdr)
 {
   switch (ehdr->e_ident[EI_VERSION]) {
     case EV_CURRENT:
@@ -200,7 +203,8 @@ const std::string getElfHeaderVersion(auto& ehdr)
   }
 }
 
-const std::string getElfHeaderOSABI(auto& ehdr)
+template <typename T>
+const std::string getElfHeaderOSABI(T& ehdr)
 {
   switch (ehdr->e_ident[EI_OSABI]) {
     case ELFOSABI_NONE:
@@ -226,7 +230,8 @@ const std::string getElfHeaderOSABI(auto& ehdr)
   }
 }
 
-const std::string getElfHeaderType(auto& ehdr)
+template <typename T>
+const std::string getElfHeaderType(T& ehdr)
 {
   switch (ehdr->e_type) {
     case ET_NONE:
@@ -252,7 +257,8 @@ const std::string getElfHeaderType(auto& ehdr)
   }
 }
 
-const std::string getElfHeaderMachine(auto& ehdr)
+template <typename T>
+const std::string getElfHeaderMachine(T& ehdr)
 {
   switch(ehdr->e_machine) {
     case EM_NONE:
@@ -298,7 +304,8 @@ std::string ElfInfo::getElfHeaderFormat(void)
   return output.str();
 }
 
-const std::string getSegmentTypeName(auto* phdr)
+template <typename T>
+const std::string getSegmentTypeName(T* phdr)
 {
   switch(phdr->p_type) {
     case PT_PHDR:
@@ -326,7 +333,8 @@ const std::string getSegmentTypeName(auto* phdr)
   }
 }
 
-const std::string getSegmentFlags(auto* phdr)
+template <typename T>
+const std::string getSegmentFlags(T* phdr)
 {
   char flags[4] = "   ";
 
