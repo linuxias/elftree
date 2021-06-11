@@ -5,18 +5,19 @@
 #include "elftree.h"
 
 TreeItem::TreeItem(const std::string fileName) :
-  _fileName(fileName),
   _index(0),
   _depth(0),
-  _folded(false)
+  _folded(false),
+  _fileName(fileName)
 {
   _elf = new ElfInfo(_fileName);
 }
 
-TreeItem::TreeItem(ElfInfo *elf) : _elf(elf),
+TreeItem::TreeItem(ElfInfo *elf) :
   _index(0),
   _depth(0),
-  _folded(false)
+  _folded(false),
+  _elf(elf)
 {
   _fileName = _elf->getFileName();
 }
