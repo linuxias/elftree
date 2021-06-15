@@ -86,6 +86,8 @@ void ElfTreeTUI::clearMenu(void)
 
 void ElfTreeTUI::createInfoWindow(int x, int y) {
 	infoWindow = newwin(y, x - 1, 0, maxX - x);
+  scrollok(infoWindow, TRUE);
+
 	box(infoWindow, 0, 0);
 	wrefresh(infoWindow);
 }
@@ -144,7 +146,7 @@ std::vector<std::string> splitStringByLine(std::string s) {
 	return v;
 }
 
-void printStringToWindow(ITEM*& currentItem, WINDOW*& window)
+void printStringToWindow(ITEM*& currentItem, WINDOW*& window, int i)
 {
   std::string curItemName = __getItemName(currentItem);
   ElfInfo* elfInfo = ElfUtil::getElfInfoByName(curItemName);
@@ -152,7 +154,6 @@ void printStringToWindow(ITEM*& currentItem, WINDOW*& window)
   wclrtobot(window);
   box(window, 0, 0);
 
-  int i = 1;
   for (auto& str : splitStringByLine(elfInfo->getElfHeaderFormat()))
     mvwprintw(window, i++, 2, "%s", str.c_str());
 
@@ -161,6 +162,10 @@ void printStringToWindow(ITEM*& currentItem, WINDOW*& window)
   for (auto& str : splitStringByLine(elfInfo->getProgramHeaderFormat()))
     mvwprintw(window, i++, 2, "%s", str.c_str());
 
+  for (auto& str : splitStringByLine(elfInfo->getSectionHeaderFormat()))
+    mvwprintw(window, i++, 2, "%s", str.c_str());
+
+  box(window, 0, 0);
   wrefresh(window);
 }
 
@@ -185,12 +190,27 @@ void ElfTreeTUI::toggleMenu(bool fold)
 
 void ElfTreeTUI::run(void)
 {
+  currentItem = nullptr;
   createMenu(maxX / 3, maxY);
   createInfoWindow((maxX / 3) * 2, LINES);
 
   int c;
+  int i  = 1;
   while ((c = getch()) != KEY_F(1)) {
     switch(c) {
+      case KEY_NPAGE:
+        if (currentItem == nullptr)
+          break;
+        wborder(infoWindow, ' ', ' ', ' ',' ',' ',' ',' ',' ');
+        printStringToWindow(currentItem, infoWindow, --i);
+        break;
+      case KEY_PPAGE:
+        if (currentItem == nullptr)
+          break;
+        wborder(infoWindow, ' ', ' ', ' ',' ',' ',' ',' ',' ');
+        if (i >= 1) i = 1;
+        printStringToWindow(currentItem, infoWindow, ++i);
+        break;
       case KEY_DOWN:
         menu_driver(menuList, REQ_DOWN_ITEM);
         break;
@@ -205,9 +225,12 @@ void ElfTreeTUI::run(void)
         break;
       case 10: // Enter Keycode
         currentItem = current_item(menuList);
-        printStringToWindow(currentItem, infoWindow);
+        i = 1;
+        printStringToWindow(currentItem, infoWindow, i);
         break;
     }
+    box(infoWindow, 0, 0);
+    wrefresh(infoWindow);
     box(menuWindow, 0, 0);
     wrefresh(menuWindow);
   }
