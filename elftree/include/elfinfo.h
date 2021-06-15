@@ -51,6 +51,7 @@ class ElfInfo {
     std::string getAbsolutePath(void);
     std::string getElfHeaderFormat(void);
     std::string getProgramHeaderFormat(void);
+    std::string getSectionHeaderFormat(void);
 };
 
 #endif /* __ELF_INFO_H__ */

@@ -45,3 +45,8 @@ TEST(ElfInfoTest, test_getElfHeaderFormat) {
   std::unique_ptr<ElfInfo> info = std::make_unique<ElfInfo>(filePath);
   ApprovalTests::Approvals::verify(info->getElfHeaderFormat());
 }
+
+TEST(ElfInfoTest, test_getSectionHeaderFormat) {
+  std::unique_ptr<ElfInfo> info = std::make_unique<ElfInfo>(filePath);
+  ApprovalTests::Approvals::verify(info->getSectionHeaderFormat());
+}
