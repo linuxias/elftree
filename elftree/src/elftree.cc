@@ -7,7 +7,7 @@
 TreeItem::TreeItem(const std::string filePath) :
   _index(0),
   _depth(0),
-  _folded(false),
+  _folded(false)
 {
   _elf = new ElfInfo(filePath);
   _fileName = _elf->getFileName();
