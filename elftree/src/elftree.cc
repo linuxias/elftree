@@ -4,13 +4,13 @@
 
 #include "elftree.h"
 
-TreeItem::TreeItem(const std::string fileName) :
+TreeItem::TreeItem(const std::string filePath) :
   _index(0),
   _depth(0),
   _folded(false),
-  _fileName(fileName)
 {
-  _elf = new ElfInfo(_fileName);
+  _elf = new ElfInfo(filePath);
+  _fileName = _elf->getFileName();
 }
 
 TreeItem::TreeItem(ElfInfo *elf) :
