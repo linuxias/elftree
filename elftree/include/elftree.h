@@ -34,12 +34,12 @@ class TreeItem {
 
 class TreeView {
   private:
-    unsigned int _cntOfNodes;
     TreeItem* _root;
     TreeItem* _current;
+    unsigned int _cntOfNodes;
 
   public:
-    TreeView(TreeItem *root) : _root(root), _cntOfNodes(0), _current(nullptr) {};
+    TreeView(TreeItem *root) : _root(root), _current(nullptr), _cntOfNodes(0) {};
     ~TreeView();
     TreeItem* getRootItem() { return _root; };
     unsigned int getCountOfNodes(void) { return _cntOfNodes; };

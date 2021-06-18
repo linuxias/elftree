@@ -161,7 +161,8 @@ std::string ElfInfo::getAbsolutePath(void)
   return _dirPath;
 }
 
-const std::string getElfHeaderData(auto& ehdr)
+template <typename T>
+const std::string getElfHeaderData(T& ehdr)
 {
   switch (ehdr->e_ident[EI_CLASS]) {
     case ELFDATANONE:
@@ -177,7 +178,8 @@ const std::string getElfHeaderData(auto& ehdr)
   }
 }
 
-const std::string getElfHeaderClass(auto& ehdr)
+template <typename T>
+const std::string getElfHeaderClass(T& ehdr)
 {
   switch (ehdr->e_ident[EI_CLASS]) {
     case ELFCLASS32:
@@ -188,7 +190,8 @@ const std::string getElfHeaderClass(auto& ehdr)
   return "UNKNOWN : " + ehdr->e_ident[EI_CLASS];
 }
 
-const std::string getElfHeaderVersion(auto& ehdr)
+template <typename T>
+const std::string getElfHeaderVersion(T& ehdr)
 {
   switch (ehdr->e_ident[EI_VERSION]) {
     case EV_CURRENT:
@@ -200,7 +203,8 @@ const std::string getElfHeaderVersion(auto& ehdr)
   }
 }
 
-const std::string getElfHeaderOSABI(auto& ehdr)
+template <typename T>
+const std::string getElfHeaderOSABI(T& ehdr)
 {
   switch (ehdr->e_ident[EI_OSABI]) {
     case ELFOSABI_NONE:
@@ -226,7 +230,8 @@ const std::string getElfHeaderOSABI(auto& ehdr)
   }
 }
 
-const std::string getElfHeaderType(auto& ehdr)
+template <typename T>
+const std::string getElfHeaderType(T& ehdr)
 {
   switch (ehdr->e_type) {
     case ET_NONE:
@@ -252,7 +257,8 @@ const std::string getElfHeaderType(auto& ehdr)
   }
 }
 
-const std::string getElfHeaderMachine(auto& ehdr)
+template <typename T>
+const std::string getElfHeaderMachine(T& ehdr)
 {
   switch(ehdr->e_machine) {
     case EM_NONE:
@@ -298,7 +304,8 @@ std::string ElfInfo::getElfHeaderFormat(void)
   return output.str();
 }
 
-const std::string getSegmentTypeName(auto* phdr)
+template <typename T>
+const std::string getSegmentTypeName(T* phdr)
 {
   switch(phdr->p_type) {
     case PT_PHDR:
@@ -326,7 +333,8 @@ const std::string getSegmentTypeName(auto* phdr)
   }
 }
 
-const std::string getSegmentFlags(auto* phdr)
+template <typename T>
+const std::string getSegmentFlags(T* phdr)
 {
   char flags[4] = "   ";
 
@@ -339,7 +347,6 @@ const std::string getSegmentFlags(auto* phdr)
 
   return std::string(flags);
 }
-
 
 std::string ElfInfo::getProgramHeaderFormat(void)
 {
@@ -378,6 +385,128 @@ std::string ElfInfo::getProgramHeaderFormat(void)
     output << getSegmentFlags(&phdr[i]);
     output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill(' ') << std::left;
     output << std::hex << phdr[i].p_align;
+    output << std::endl;
+  }
+
+  return output.str();
+}
+
+template <typename T>
+const std::string getShTypeString(T* shdr)
+{
+  switch(shdr->sh_type) {
+    case SHT_NULL:
+      return "NULL";
+    case SHT_PROGBITS:
+      return "PROGBITS";
+    case SHT_SYMTAB:
+      return "SYMTAB";
+    case SHT_STRTAB:
+      return "STRTAB";
+    case SHT_RELA:
+      return "RELA";
+    case SHT_HASH:
+      return "HASH";
+    case SHT_DYNAMIC:
+      return "DYNAMIC";
+    case SHT_NOTE:
+      return "NOTE";
+    case SHT_NOBITS:
+      return "NOBITS";
+    case SHT_REL:
+      return "REL";
+    case SHT_SHLIB:
+      return "SHLIB";
+    case SHT_DYNSYM:
+      return "DYNSYM";
+    case SHT_INIT_ARRAY:
+      return "INIT_ARRAY";
+    case SHT_FINI_ARRAY:
+      return "FINI_ARRAY";
+    case SHT_PREINIT_ARRAY:
+      return "PREINIT_ARRAY";
+    case SHT_GROUP:
+      return "GROUP";
+    case SHT_SYMTAB_SHNDX:
+      return "SYMTAB_SHNDX";
+    case SHT_GNU_ATTRIBUTES:
+      return "GNU_ATTRIBUTES";
+    case SHT_GNU_HASH:
+      return "GNU_HASH";
+    case SHT_GNU_verdef:
+      return "VERDEF";
+    case SHT_GNU_verneed:
+      return "VERNEED";
+    case SHT_GNU_versym:
+      return "VERSYM";
+  }
+  std::stringstream ss;
+  ss << "<unknwon : " << shdr->sh_type << ">";
+  return ss.str();
+}
+
+template <typename T>
+const std::string getSectionFlags(T* shdr)
+{
+  std::string flag = "";
+  if (shdr->sh_flags & SHF_WRITE)
+    flag += "W";
+  if (shdr->sh_flags & SHF_ALLOC)
+    flag += "A";
+  if (shdr->sh_flags & SHF_EXECINSTR)
+    flag += "X";
+  if (shdr->sh_flags & SHF_MERGE)
+    flag += "M";
+  if (shdr->sh_flags & SHF_STRINGS)
+    flag += "S";
+  if (shdr->sh_flags & SHF_INFO_LINK)
+    flag += "I";
+  if (shdr->sh_flags & SHF_LINK_ORDER)
+    flag += "L";
+  if (shdr->sh_flags & SHF_GROUP)
+    flag += "G";
+  if (shdr->sh_flags & SHF_TLS)
+    flag += "T";
+
+  return flag;
+}
+
+std::string ElfInfo::getSectionHeaderFormat(void)
+{
+  std::stringstream output;
+  auto* ehdr = _elf64.ehdr;
+  auto* shdr = _elf64.shdr;
+  unsigned char* string_table;
+  string_table = &_mem[shdr[ehdr->e_shstrndx].sh_offset];
+
+  output << "Section Header : " << std::endl;
+  output << "[Nr] Name               Type               Address            Offset" << std::endl;
+  output << "     Size               EntSize            Flags  Link  Info  Align" << std::endl;
+
+  for (int i = 0; i < ehdr->e_shnum; i++) {
+    boost::io::ios_all_saver guard(output);
+    output << std::right;
+    output << "[" << std::setw(2) << std::to_string(i) << std::right << "] ";
+    output << std::setw(17) << std::setfill(' ') << std::left;
+    output << std::left;
+    output << std::setw(19) << &string_table[shdr[i].sh_name];
+    output << std::setw(18) << getShTypeString(&shdr[i]);
+    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::hex << shdr[i].sh_addr;
+    output << std::setw(0) <<" 0x" << std::setw(8) << std::setfill('0') << std::right;
+    output << std::hex << shdr[i].sh_offset;
+    output << std::endl;
+    output << "  ";
+    output << std::setw(2) << std::setfill(' ') <<" " << std::right;
+    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::hex <<shdr[i].sh_size;
+    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::hex << shdr[i].sh_entsize;
+    output << std::setw(4) << std::setfill(' ') << std::right;
+    output << getSectionFlags(&shdr[i]);
+    output << std::setw(7) << shdr[i].sh_link;
+    output << std::setw(6) << shdr[i].sh_info;
+    output << std::setw(6) << shdr[i].sh_addralign;
     output << std::endl;
   }
 

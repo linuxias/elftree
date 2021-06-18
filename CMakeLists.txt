@@ -18,7 +18,7 @@ INCLUDE(ApplyPkgConfig)
 PKG_CHECK_MODULES(NCURSES_DEPS REQUIRED ncurses)
 PKG_CHECK_MODULES(NCURSES_MENU_DEPS REQUIRED menu)
 PKG_CHECK_MODULES(NCURSES_FORM_DEPS REQUIRED form)
-#PKG_CHECK_MODULES(GTEST_DEPS REQUIRED gtest)
+PKG_CHECK_MODULES(GTEST_DEPS REQUIRED gtest)
 FIND_PACKAGE(Boost REQUIRED COMPONENTS system filesystem regex program_options)
 
 #################################################################
@@ -27,5 +27,5 @@ SET(TARGET_ELFTREE_UNIT_TEST "elftree-unit-test")
 SET(ELFTREE_STATIC_LIB "elf_static")
 #################################################################
 ADD_SUBDIRECTORY(elftree)
-#ADD_SUBDIRECTORY(lib)
-#ADD_SUBDIRECTORY(test)
+ADD_SUBDIRECTORY(lib)
+ADD_SUBDIRECTORY(test)
