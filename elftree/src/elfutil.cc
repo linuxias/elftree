@@ -138,6 +138,8 @@ void __make_children_item(TreeItem*& parentItem, const ElfArchType rootType, int
         } catch (const std::exception &e) {
           throw;
         }
+
+        __insert_info_in_map(childInfo);
       }
 
       childItem->setDepth(parentItem->getDepth() + 1);

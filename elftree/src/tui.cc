@@ -53,11 +53,11 @@ void ElfTreeTUI::convertViewToItems(TreeView* view)
   travelTree(rootItem,  &index);
 }
 
-
 void ElfTreeTUI::createMenu(int x, int y)
 {
-  int size = _menuTreeView->getCountOfNodes() + 1;
+  int size = _menuTreeView->getCountOfNodes() + 2;
   itemList = (ITEM **)calloc(size, sizeof(ITEM *));
+  itemList[size - 1] = nullptr;
   convertViewToItems(_menuTreeView);
   menuList = new_menu((ITEM **)itemList);
   menuWindow = newwin(y, x, 0, 0);
