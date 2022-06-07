@@ -1,0 +1,19 @@
+File: elftest
+Class: ELF64
+Data : 2's complement, big endian
+Version : current
+OS/ABI : UNIX - GNU
+ABI Version : 0
+Type : DYN (Shared object file)
+Machine : AArch64
+Entry point address : 0x981c
+Start of program header : 0x40
+Start of section header : 0x296f10
+Flags : 0x0
+Size of this headers : 64 (Byte)
+Size of program headers : 56 (Byte)
+Number of program headers : 9
+Size of section headers : 64 (Byte)
+Number of section headers : 40
+Section header string table index : 39
+

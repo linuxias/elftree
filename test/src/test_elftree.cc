@@ -1,30 +1,29 @@
 #include <exception>
 #include <string>
 #include <memory>
+#include <list>
 
-#include <ApprovalTests.hpp>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include <boost/filesystem.hpp>
-
-#include "../../elftree/include/elfinfo.h"
+#include "../../elftree/include/elftree.h"
+#include "test_arch.h"
 
 using namespace testing;
-namespace bf=boost::filesystem;
 
-const std::string filePath = "testdata/elftest";
 const std::string fileName = "elftest";
 
-TEST(ElfInfoTest, test_create_instance) {
-  std::unique_ptr<ElfInfo> info = std::make_unique<ElfInfo>(filePath);
-  EXPECT_EQ(fileName, info->getFileName());
+TEST(TreeItemTest, test_create_instance)
+{
+  std::unique_ptr<TreeItem> item = std::make_unique<TreeItem>(filePath);
+  EXPECT_NE(item, nullptr);
 }
 
-TEST(ElfInfoTest, test_create_instance_with_wrong_file) {
+TEST(TreeItemTest, test_create_instance_exception)
+{
   EXPECT_THROW ({
     try {
-      std::unique_ptr<ElfInfo> info = std::make_unique<ElfInfo>("TEST");
+      std::unique_ptr<TreeItem> item = std::make_unique<TreeItem>("TEST");
     } catch (const std::invalid_argument &e) {
       EXPECT_STREQ("This file is not exists", e.what());
       throw e;
@@ -33,20 +32,60 @@ TEST(ElfInfoTest, test_create_instance_with_wrong_file) {
   std::invalid_argument);
 }
 
-TEST(ElfInfoTest, test_getAbsolutePath) {
-  std::unique_ptr<ElfInfo> info = std::make_unique<ElfInfo>(filePath);
-  std::string fileDir = bf::current_path().string();
-  fileDir = fileDir + "/testdata";
-
-  EXPECT_EQ(info->getAbsolutePath(), fileDir);
+TEST(TreeItemTest, test_getFileName)
+{
+  std::unique_ptr<TreeItem> item = std::make_unique<TreeItem>(filePath);
+  EXPECT_EQ(fileName, item->getFileName());
 }
 
-TEST(ElfInfoTest, test_getElfHeaderFormat) {
-  std::unique_ptr<ElfInfo> info = std::make_unique<ElfInfo>(filePath);
-  ApprovalTests::Approvals::verify(info->getElfHeaderFormat());
+TEST(TreeItemTest, test_isFolded)
+{
+  std::unique_ptr<TreeItem> item = std::make_unique<TreeItem>(filePath);
+  EXPECT_EQ(true, item->isFolded());
+  item->setFolded(false);
+  EXPECT_EQ(false, item->isFolded());
+  item->setFolded(true);
+  EXPECT_EQ(true, item->isFolded());
 }
 
-TEST(ElfInfoTest, test_getSectionHeaderFormat) {
-  std::unique_ptr<ElfInfo> info = std::make_unique<ElfInfo>(filePath);
-  ApprovalTests::Approvals::verify(info->getSectionHeaderFormat());
+TEST(TreeItemTest, test_hasChildren)
+{
+  std::unique_ptr<TreeItem> item = std::make_unique<TreeItem>(filePath);
+  TreeItem* child = new TreeItem(filePath);
+
+  item->addChildItem(child);
+  EXPECT_EQ(item->hasChildren(), true);
+}
+
+TEST(TreeItemTest, test_getChildren_empyty)
+{
+  std::unique_ptr<TreeItem> item = std::make_unique<TreeItem>(filePath);
+  std::list<TreeItem*> children = item->getChildren();
+
+  EXPECT_EQ(children.empty(), true);
+}
+
+TEST(TreeItemTest, test_getChildren_check_size)
+{
+  std::unique_ptr<TreeItem> item = std::make_unique<TreeItem>(filePath);
+  TreeItem* child = new TreeItem(filePath);
+
+  item->addChildItem(child);
+  std::list<TreeItem*> children = item->getChildren();
+  EXPECT_EQ(children.size(), 1);
+}
+
+TEST(TreeItemTest, test_addChild_empyty)
+{
+  EXPECT_THROW ({
+    try {
+      std::unique_ptr<TreeItem> item = std::make_unique<TreeItem>(filePath);
+
+      item->addChildItem(nullptr);
+    } catch (const std::invalid_argument &e) {
+      EXPECT_STREQ("Child is nullptr", e.what());
+      throw e;
+    }
+  },
+  std::invalid_argument);
 }

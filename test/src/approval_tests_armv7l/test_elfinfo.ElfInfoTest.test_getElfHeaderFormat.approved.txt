@@ -1,0 +1,19 @@
+File: elftest
+Class: ELF32
+Data : 2's complement, little endian
+Version : current
+OS/ABI : UNIX - System V
+ABI Version : 0
+Type : DYN (Shared object file)
+Machine : ARM
+Entry point address : 0x58b8
+Start of program header : 0x34
+Start of section header : 0x113a4
+Flags : 0x5000200
+Size of this headers : 52 (Byte)
+Size of program headers : 32 (Byte)
+Number of program headers : 9
+Size of section headers : 40 (Byte)
+Number of section headers : 27
+Section header string table index : 26
+

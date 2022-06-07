@@ -1,6 +1,6 @@
 Name: elftree
 Summary: Tool to display ELF dependencies as a tree
-Version: 0.1.0
+Version: 1.0.0
 Release: 0
 Group: System/Utilities
 License: Apache-2.0
@@ -25,7 +25,7 @@ This tool is to display so dependency as tree.
 make %{?jobs:-j%jobs}
 
 %check
-cd test && ctest -V
+(cd test && ctest -V)
 
 %install
 %make_install

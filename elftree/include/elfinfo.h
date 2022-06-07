@@ -7,51 +7,46 @@
 
 #include <elf.h>
 
+#include "elf_arch.h"
+
 enum class ElfArchType {
-  ELF_ARCH_64BIT,
-  ELF_ARCH_32BIT,
-  ELF_ARCH_UNKNOWN
+  ELF_ARCH_UNKNOWN = ELFCLASSNONE,
+  ELF_ARCH_32BIT = ELFCLASS32,
+  ELF_ARCH_64BIT = ELFCLASS64
 };
-
-typedef struct {
-  Elf64_Ehdr *ehdr;
-  Elf64_Phdr *phdr;
-  Elf64_Shdr *shdr;
-} Elf64Info;
-
-typedef struct {
-  Elf32_Ehdr *ehdr;
-  Elf32_Phdr *phdr;
-  Elf32_Shdr *shdr;
-} Elf32Info;
 
 class ElfInfo {
   private:
     int _fd;
     uint8_t *_mem;
+    off_t _size;
     std::string _filePath;
-    std::string _dirPath;
     std::string _fileName;
-    ElfArchType _arch_type;
-    Elf64Info _elf64;
-    Elf32Info _elf32;
+    ElfArchType _archType;
+    ElfLowInfo _elf;
 
     void loadMemoryMap(void);
     void loadElfInfo(void);
     bool isELF(const uint8_t *mem);
+    Elf_Shdr* getSectionHeader(std::string sectionName) const;
+    std::string getDump(unsigned int offset, unsigned int size) const;
 
   public:
     ElfInfo() = delete;
-    ElfInfo(const std::string filePath);
+    explicit ElfInfo(const std::string& filePath);
     ~ElfInfo();
 
-    std::string getFileName(void);
-    ElfArchType getArchType(void);
-    std::list<std::string> getDependency(void);
-    std::string getAbsolutePath(void);
-    std::string getElfHeaderFormat(void);
-    std::string getProgramHeaderFormat(void);
-    std::string getSectionHeaderFormat(void);
+    std::string getFileName(void) const;
+    ElfArchType getArchType(void) const;
+    off_t getELFSize(void) const;
+    std::list<std::string> getDependency(void) const;
+    std::list<std::string> getSectionList(void) const;
+
+    std::string getElfHeaderFormat(void) const;
+    std::string getProgramHeaderFormat(void) const;
+    std::string getSectionHeaderFormat(void) const;
+    std::string getSectionDumpFormat(const std::string& sectionName) const;
+    std::string getMemDumpFormat(const std::string& address, unsigned int size) const;
 };
 
 #endif /* __ELF_INFO_H__ */

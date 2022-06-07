@@ -4,35 +4,35 @@
 #include <string>
 #include <vector>
 
-#include <ncurses.h>
-#include <menu.h>
-#include <form.h>
-
 #include "elftree.h"
+#include "window.h"
+#include "info_window.h"
+#include "menu_window.h"
+#include "tree_selector.h"
 
 class ElfTreeTUI {
   public:
+    ElfTreeTUI();
     void initTerminal(void);
     void clearTerminal(void);
     void run(void);
     void setMenuList(TreeView* view);
 
   private:
-    std::vector<std::string> _menus;
+    std::vector<MenuItem*> _menus;
+    Point _maxPoint = {0, 0};
+    InfoWindow* _infoWindow;
+    TreeSelector* _treeSelector;
     TreeView* _menuTreeView;
-    ITEM **itemList;
-    ITEM *currentItem;
-    MENU *menuList;
-    WINDOW *menuWindow;
-    WINDOW *infoWindow;
-    int maxX, maxY;
-    void createMenu(int x, int y);
-    void clearMenu(void);
-    void createInfoWindow(int x, int y);
-    void clearInfoWindow(void);
+    void refreshTerminal();
     void convertViewToItems(TreeView* view);
-    void travelTree(TreeItem*& item, int* index);
+    void travelTree(TreeItem*& item, int depth);
     void toggleMenu(bool fold);
+    void printInformation(int start_line);
+    void printSection(std::string section);
+    void printAddressDump(const std::string& address);
+    std::string selectSection(void);
+    std::string inputAddress(void);
 };
 
 #endif /* __TUI_H__ */

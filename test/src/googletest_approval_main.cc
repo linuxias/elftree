@@ -16,3 +16,18 @@
 
 #define APPROVALS_GOOGLETEST // This tells Approval Tests to provide a main() - only do this in one cpp file
 #include "ApprovalTests.hpp"
+
+#ifdef ARCH_AARCH64
+auto directoryDisposer =
+    ApprovalTests::Approvals::useApprovalsSubdirectory("approval_tests_aarch64");
+#elif ARCH_ARMV7L
+auto directoryDisposer =
+    ApprovalTests::Approvals::useApprovalsSubdirectory("approval_tests_armv7l");
+#elif ARCH_X86_64
+auto directoryDisposer =
+    ApprovalTests::Approvals::useApprovalsSubdirectory("approval_tests_x86_64");
+#elif ARCH_I586
+auto directoryDisposer =
+    ApprovalTests::Approvals::useApprovalsSubdirectory("approval_tests_i586");
+#endif
+

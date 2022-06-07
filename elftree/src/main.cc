@@ -16,7 +16,7 @@
 
 static void __print_usage()
 {
-  std::cout << "Usage : rpmtree {library name or file name}\n" << std::endl;
+  std::cout << "Usage : elftree {library or elf path}\n" << std::endl;
 }
 
 static bool __check_file_is_exists(std::string fileName)

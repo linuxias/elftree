@@ -26,28 +26,30 @@ bool ElfInfo::isELF(const uint8_t *mem)
 #define FIRST_MAGIC_STRING 0x7f
 #define ELF_STRING "ELF"
 
-    if (mem[0] != FIRST_MAGIC_STRING && strcmp((char *)(&mem[1]), ELF_STRING)) {
-      fprintf(stderr, "Not an ELF");
-      return false;
-    }
+  if (mem[0] != FIRST_MAGIC_STRING && strcmp((char *)(&mem[1]), ELF_STRING)) {
+    fprintf(stderr, "Not an ELF");
+    return false;
+  }
 
-    return true;
+  return true;
 }
 
 void ElfInfo::loadMemoryMap(void)
 {
-	struct stat st;
-	errno = 0;
-	if (fstat(_fd, &st) < 0) {
-		perror("fstat");
-		exit(-1);
-	}
+  struct stat st;
+  errno = 0;
+  if (fstat(_fd, &st) < 0) {
+    perror("fstat");
+    exit(-1);
+  }
 
-	_mem = static_cast<uint8_t *>(mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, _fd, 0));
-	if (_mem == MAP_FAILED) {
-		perror("mmap");
-		exit(-1);
-	}
+  _mem = static_cast<uint8_t *>(mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, _fd, 0));
+  if (_mem == MAP_FAILED) {
+    perror("mmap");
+    exit(-1);
+  }
+
+  _size = st.st_size;
 }
 
 void ElfInfo::loadElfInfo(void)
@@ -59,22 +61,14 @@ void ElfInfo::loadElfInfo(void)
     exit(-1);
   }
 
-  if (buf[EI_CLASS] == ELFCLASS32) {
-    _elf32.ehdr = (Elf32_Ehdr *)_mem;
-    _elf32.phdr = (Elf32_Phdr *)&(_mem[_elf32.ehdr->e_phoff]);
-    _elf32.shdr = (Elf32_Shdr *)&(_mem[_elf32.ehdr->e_shoff]);
-  } else if (buf[EI_CLASS] == ELFCLASS64) {
-    _elf64.ehdr = (Elf64_Ehdr *)_mem;
-    _elf64.phdr = (Elf64_Phdr *)&(_mem[_elf64.ehdr->e_phoff]);
-    _elf64.shdr = (Elf64_Shdr *)&(_mem[_elf64.ehdr->e_shoff]);
-  } else {
-    /* TODO : Process unknown class exception*/
-  }
-  _arch_type = (ElfArchType)buf[EI_CLASS];
+  _elf.ehdr = (Elf_Ehdr *)_mem;
+  _elf.phdr = (Elf_Phdr *)&(_mem[_elf.ehdr->e_phoff]);
+  _elf.shdr = (Elf_Shdr *)&(_mem[_elf.ehdr->e_shoff]);
+  _archType = (ElfArchType)buf[EI_CLASS];
 }
 
-ElfInfo::ElfInfo(const std::string filePath) :
-  _filePath(filePath), _arch_type(ElfArchType::ELF_ARCH_UNKNOWN)
+ElfInfo::ElfInfo(const std::string& filePath) :
+  _filePath(filePath), _archType(ElfArchType::ELF_ARCH_UNKNOWN)
 {
   errno = 0;
   _fd = open(_filePath.c_str(), O_RDONLY);
@@ -87,10 +81,7 @@ ElfInfo::ElfInfo(const std::string filePath) :
   }
 
   boost::filesystem::path p(filePath);
-  _dirPath = p.parent_path().string();
   _fileName = p.filename().string();
-
-  _dirPath = boost::filesystem::absolute(_dirPath).string();
 
   loadMemoryMap();
   if (isELF(_mem) == false)
@@ -115,50 +106,80 @@ ElfInfo::~ElfInfo() {
     close(_fd);
 }
 
-std::list<std::string> ElfInfo::getDependency(void) {
-  std::list<std::string> deps;
-  int i;
-  unsigned char *string_table;
-  Elf64_Ehdr *ehdr = _elf64.ehdr;
-  Elf64_Shdr *shdr = _elf64.shdr;
+Elf_Shdr* ElfInfo::getSectionHeader(std::string sectionName) const
+{
+  auto* ehdr = _elf.ehdr;
+  auto* shdr = _elf.shdr;
+  unsigned char *string_table = static_cast<unsigned char*>(&_mem[shdr[ehdr->e_shstrndx].sh_offset]);
 
-  string_table = &_mem[shdr[ehdr->e_shstrndx].sh_offset];
-  unsigned char *dynstr= NULL;
-  for (i = 0; i < ehdr->e_shnum; i++) {
-    if (strcmp((char *)&string_table[shdr[i].sh_name], ".dynstr") == 0) {
-      dynstr = (unsigned char *)&_mem[shdr[i].sh_offset];
+  for (int i = 0; i < ehdr->e_shnum; i++) {
+    if (strcmp(reinterpret_cast<const char *>(&string_table[shdr[i].sh_name]), sectionName.c_str()) == 0) {
+      return static_cast<Elf_Shdr*>(&shdr[i]);
     }
   }
 
-  for (i = 0; i < ehdr->e_shnum; i++) {
-    if (strcmp((char *)&string_table[shdr[i].sh_name], ".dynamic") == 0) {
-      unsigned char *addr = &_mem[shdr[i].sh_offset];
-      int count = shdr[i].sh_size / sizeof(Elf64_Dyn);
-      for (int j = 0; j < count; j++) {
-        Elf64_Dyn *dyn = (Elf64_Dyn *)&addr[j * sizeof(Elf64_Dyn)];
-        if (dyn->d_tag == DT_NEEDED) {
-          deps.push_back(std::string((char *)&dynstr[dyn->d_un.d_val]));
-        }
-      }
+  return nullptr;
+}
+
+std::list<std::string> ElfInfo::getDependency(void) const
+{
+  std::list<std::string> deps;
+  unsigned char* dynstr;
+
+  auto* header = getSectionHeader(".dynstr");
+  if (header == nullptr)
+    return deps;
+  dynstr = static_cast<unsigned char *>(&_mem[header->sh_offset]);
+
+  auto* dynamic = getSectionHeader(".dynamic");
+  if (dynamic == nullptr)
+    return deps;
+
+  unsigned char *addr = static_cast<unsigned char*>(&_mem[dynamic->sh_offset]);
+  int count = dynamic->sh_size / sizeof(Elf_Dyn);
+  for (int j = 0; j < count; j++) {
+    Elf_Dyn *dyn = (Elf_Dyn *)&addr[j * sizeof(Elf_Dyn)];
+    if (dyn->d_tag == DT_NEEDED) {
+      std::string d_val = reinterpret_cast<const char *>(&dynstr[dyn->d_un.d_val]);
+      if (d_val.find("ld-linux") != std::string::npos)
+        continue;
+      deps.push_back(d_val);
     }
   }
 
   return deps;
 }
 
-std::string ElfInfo::getFileName(void)
+std::list<std::string> ElfInfo::getSectionList(void) const
+{
+  std::list<std::string> sections;
+
+  auto* ehdr = _elf.ehdr;
+  auto* shdr = _elf.shdr;
+  unsigned char *string_table = static_cast<unsigned char*>(&_mem[shdr[ehdr->e_shstrndx].sh_offset]);
+
+  for (int i = 0; i < ehdr->e_shnum; i++) {
+    std::string section_name = reinterpret_cast<const char*>(&string_table[shdr[i].sh_name]);
+    if (section_name.empty())
+      continue;
+    sections.push_back(section_name);
+  }
+  return sections;
+}
+
+std::string ElfInfo::getFileName(void) const
 {
   return _fileName;
 }
 
-ElfArchType ElfInfo::getArchType(void)
+ElfArchType ElfInfo::getArchType(void) const
 {
-  return _arch_type;
+  return _archType;
 }
 
-std::string ElfInfo::getAbsolutePath(void)
+off_t ElfInfo::getELFSize(void) const
 {
-  return _dirPath;
+  return _size;
 }
 
 template <typename T>
@@ -278,10 +299,10 @@ const std::string getElfHeaderMachine(T& ehdr)
   }
 }
 
-std::string ElfInfo::getElfHeaderFormat(void)
+std::string ElfInfo::getElfHeaderFormat(void) const
 {
   std::stringstream output;
-  auto*& ehdr = _elf64.ehdr;
+  auto* ehdr = _elf.ehdr;
   output << "File: " << _fileName << std::endl;
   output << "Class: " << getElfHeaderClass(ehdr) << std::endl;
   output << "Data : " << getElfHeaderData(ehdr) << std::endl;
@@ -326,6 +347,8 @@ const std::string getSegmentTypeName(T* phdr)
       return "GNU_STACK";
     case PT_GNU_RELRO:
       return "GNU_RELRO";
+    case PT_ARM_EXIDX:
+      return "EXIDX";
     default:
       std::stringstream ss;
       ss << "<unknwon : " << phdr->p_type << ">";
@@ -348,10 +371,10 @@ const std::string getSegmentFlags(T* phdr)
   return std::string(flags);
 }
 
-std::string ElfInfo::getProgramHeaderFormat(void)
+std::string ElfInfo::getProgramHeaderFormat(void) const
 {
   std::stringstream output;
-  auto* phdr = _elf64.phdr;
+  auto* phdr = _elf.phdr;
 
   output << "Program Header : " << std::endl;
   output << std::setw(6) << "Type";
@@ -364,26 +387,26 @@ std::string ElfInfo::getProgramHeaderFormat(void)
   output << std::setw(17) << "Flag";
   output << std::setw(7) << "Align";
   output << std::endl;
-  for (int i = 0; i < _elf64.ehdr->e_phnum; i++) {
+  for (int i = 0; i < _elf.ehdr->e_phnum; i++) {
     output << "  ";
     output << std::setw(14) << std::setfill(' ') << std::left;
     output << getSegmentTypeName(&phdr[i]);
-    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
-    output << std::hex <<phdr[i].p_offset;
-    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::setw(0) << " 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::hex << phdr[i].p_offset;
+    output << std::setw(0) << " 0x" << std::setw(16) << std::setfill('0') << std::right;
     output << std::hex << phdr[i].p_vaddr;
-    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::setw(0) << " 0x" << std::setw(16) << std::setfill('0') << std::right;
     output << std::hex << phdr[i].p_paddr;
     output << std::endl;
     output << "  ";
     output << std::setw(14) << std::setfill(' ') <<" " << std::right;
-    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
-    output << std::hex <<phdr[i].p_filesz;
-    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::setw(0) << " 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::hex << phdr[i].p_filesz;
+    output << std::setw(0) << " 0x" << std::setw(16) << std::setfill('0') << std::right;
     output << std::hex << phdr[i].p_memsz;
     output << std::setw(5) << std::setfill(' ') << std::right;
     output << getSegmentFlags(&phdr[i]);
-    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill(' ') << std::left;
+    output << std::setw(0) << " 0x" << std::setw(16) << std::setfill(' ') << std::left;
     output << std::hex << phdr[i].p_align;
     output << std::endl;
   }
@@ -439,6 +462,8 @@ const std::string getShTypeString(T* shdr)
       return "VERNEED";
     case SHT_GNU_versym:
       return "VERSYM";
+    case SHT_ARM_EXIDX:
+      return "ARM_EXIDX";
   }
   std::stringstream ss;
   ss << "<unknwon : " << shdr->sh_type << ">";
@@ -471,11 +496,11 @@ const std::string getSectionFlags(T* shdr)
   return flag;
 }
 
-std::string ElfInfo::getSectionHeaderFormat(void)
+std::string ElfInfo::getSectionHeaderFormat(void) const
 {
   std::stringstream output;
-  auto* ehdr = _elf64.ehdr;
-  auto* shdr = _elf64.shdr;
+  auto* ehdr = _elf.ehdr;
+  auto* shdr = _elf.shdr;
   unsigned char* string_table;
   string_table = &_mem[shdr[ehdr->e_shstrndx].sh_offset];
 
@@ -491,16 +516,16 @@ std::string ElfInfo::getSectionHeaderFormat(void)
     output << std::left;
     output << std::setw(19) << &string_table[shdr[i].sh_name];
     output << std::setw(18) << getShTypeString(&shdr[i]);
-    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::setw(0) << " 0x" << std::setw(16) << std::setfill('0') << std::right;
     output << std::hex << shdr[i].sh_addr;
-    output << std::setw(0) <<" 0x" << std::setw(8) << std::setfill('0') << std::right;
+    output << std::setw(0) << " 0x" << std::setw(8) << std::setfill('0') << std::right;
     output << std::hex << shdr[i].sh_offset;
     output << std::endl;
     output << "  ";
-    output << std::setw(2) << std::setfill(' ') <<" " << std::right;
-    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
-    output << std::hex <<shdr[i].sh_size;
-    output << std::setw(0) <<" 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::setw(2) << std::setfill(' ') << " " << std::right;
+    output << std::setw(0) << " 0x" << std::setw(16) << std::setfill('0') << std::right;
+    output << std::hex << shdr[i].sh_size;
+    output << std::setw(0) << " 0x" << std::setw(16) << std::setfill('0') << std::right;
     output << std::hex << shdr[i].sh_entsize;
     output << std::setw(4) << std::setfill(' ') << std::right;
     output << getSectionFlags(&shdr[i]);
@@ -511,4 +536,61 @@ std::string ElfInfo::getSectionHeaderFormat(void)
   }
 
   return output.str();
+}
+
+char convertCharToAscii(unsigned char character)
+{
+  if (character >= '0' && character <= 'z')
+    return character;
+  else
+    return '.';
+}
+
+std::string ElfInfo::getDump(unsigned int offset, unsigned int size) const
+{
+  unsigned char *address = static_cast<unsigned char*>(&_mem[offset]);
+  std::stringstream output;
+  std::string hexToString;
+
+  for (unsigned int i = 0; i < size; ) {
+    output << std::setw(0) <<" 0x" << std::setw(8) << std::setfill('0') << std::right;
+    output << std::hex << (offset + i) << "  ";
+
+    for (unsigned int j = 0; j < 16 && (i + j < size); j++) {
+      if (j % 4 == 0 && j > 0)
+        output << " ";
+      output << std::setw(2) << std::setfill('0') << static_cast<int>(address[i + j]);
+      hexToString += convertCharToAscii(address[i + j]);
+    }
+
+    output << "  |  " << hexToString << std::endl;
+    hexToString = "";
+    i += 16;
+  }
+  output << std::endl;
+
+  return output.str();
+}
+
+std::string ElfInfo::getSectionDumpFormat(const std::string& sectionName) const
+{
+  auto* shdr = getSectionHeader(sectionName);
+  if (shdr == nullptr)
+    return "";
+
+  std::string prefix = "Hex dump of section : " + sectionName + "\n\n";
+  std::string dump = getDump(shdr->sh_offset, shdr->sh_size);
+  dump.insert(0, prefix);
+
+  return dump;
+}
+
+std::string ElfInfo::getMemDumpFormat(const std::string& address, unsigned int size) const
+{
+  unsigned int offset = std::stoul(address, nullptr, 16);
+  if (offset > _size)
+    return "Address is bigger than ELF size";
+  std::string dump = getDump(offset, size);
+
+  return dump;
 }

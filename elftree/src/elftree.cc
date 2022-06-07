@@ -5,18 +5,18 @@
 #include "elftree.h"
 
 TreeItem::TreeItem(const std::string filePath) :
-  _index(0),
-  _depth(0),
-  _folded(false)
+  _folded(true)
 {
+  try {
   _elf = new ElfInfo(filePath);
+  } catch (const std::exception& e){
+    throw;
+  }
   _fileName = _elf->getFileName();
 }
 
 TreeItem::TreeItem(ElfInfo *elf) :
-  _index(0),
-  _depth(0),
-  _folded(false),
+  _folded(true),
   _elf(elf)
 {
   _fileName = _elf->getFileName();
@@ -31,9 +31,15 @@ TreeItem::~TreeItem()
     delete _elf;
 }
 
-std::list<TreeItem*> TreeItem::getChildren() { return _children; }
+std::list<TreeItem*> TreeItem::getChildren()
+{
+  return _children;
+}
 
-ElfInfo *TreeItem::getElfInfo(void) { return _elf; }
+ElfInfo *TreeItem::getElfInfo(void)
+{
+  return _elf;
+}
 
 void TreeItem::addChildItem(TreeItem *child)
 {
@@ -42,11 +48,10 @@ void TreeItem::addChildItem(TreeItem *child)
   _children.push_back(child);
 }
 
-TreeView::~TreeView() {
+TreeView::~TreeView()
+{
   if (_root == nullptr)
     return;
 
   delete _root;
 }
-
-

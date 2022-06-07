@@ -19,21 +19,21 @@ using namespace boost::algorithm;
 
 static std::map<std::string, ElfInfo*> elfInfoMap;
 
-static bool __check_file_is_exists(std::string fileName)
+static bool __check_file_is_exists(const std::string& fileName)
 {
   if ( boost::filesystem::exists(fileName) == false )
     return false;
   return true;
 }
 
-static bool __has_prefix_substr(std::string src, std::string match)
+static bool __has_prefix_substr(const std::string& src, const std::string& match)
 {
   if (src.substr(0, match.size()) == match)
     return true;
   return false;
 }
 
-static void __get_path_in_soconf(const std::string path, std::list<std::string>& pathList)
+static void __get_path_in_soconf(const std::string& path, std::list<std::string>& pathList)
 {
   if (boost::filesystem::is_directory(path) == false)
     return;
@@ -55,12 +55,10 @@ static void __get_path_in_soconf(const std::string path, std::list<std::string>&
 
 static std::list<std::string> __get_libpath_list(void)
 {
-  std::list<std::string> pathList = {
-    "/lib"s,
-    "/usr/lib"s,
-    "/lib64"s,
-    "/usr/lib64"s
-  };
+  static std::list<std::string> pathList;
+
+  if (!pathList.empty())
+    return pathList;
 
   char *ld_path = std::getenv("LD_LIBRARY_PATH");
   if (ld_path != nullptr)
@@ -87,12 +85,17 @@ static std::list<std::string> __get_libpath_list(void)
     }
   }
 
+  pathList.push_back("/lib"s);
+  pathList.push_back("/usr/lib"s);
+  pathList.push_back("/lib64"s);
+  pathList.push_back("/usr/lib64"s);
+
   pathList.unique();
 
   return pathList;
 }
 
-bool __is_valid_path(std::string filepath)
+bool __is_valid_path(const std::string& filepath)
 {
   if (__check_file_is_exists(filepath) == false)
     return false;
@@ -103,7 +106,7 @@ bool __is_valid_path(std::string filepath)
   return true;
 }
 
-void __insert_info_in_map(ElfInfo* info)
+void __insert_info_to_map(ElfInfo* info)
 {
   std::string name = info->getFileName();
   if (elfInfoMap.count(name) == 0)
@@ -113,66 +116,64 @@ void __insert_info_in_map(ElfInfo* info)
 void __make_children_item(TreeItem*& parentItem, const ElfArchType rootType, int* idx)
 {
   ElfInfo* parentInfo = parentItem->getElfInfo();
-  std::list<std::string> childs_string = parentInfo->getDependency();
+  std::list<std::string> children_string = parentInfo->getDependency();
   std::list<std::string> libpaths = __get_libpath_list();
 
-  for (auto& child_string : childs_string) {
+  TreeItem* childItem = nullptr;
+  ElfInfo* childInfo = nullptr;
+  for (auto& child_string : children_string) {
     for (auto& dirpath : libpaths) {
       std::string filepath = dirpath + "/" + child_string;
+
       if (__is_valid_path(filepath) == false)
         continue;
 
-      TreeItem* childItem = nullptr;
-      if (elfInfoMap.find(child_string) != elfInfoMap.end()) {
-        ElfInfo* childInfo = elfInfoMap[child_string];
+      try {
+        if (elfInfoMap.find(child_string) != elfInfoMap.end()) {
+          childInfo = elfInfoMap[child_string];
+        } else {
+          childInfo = new ElfInfo(filepath);
+          if (rootType != childInfo->getArchType()) {
+            delete childInfo;
+            childInfo = nullptr;
+            continue;
+          }
+          __insert_info_to_map(childInfo);
+        }
+
         childItem = new TreeItem(childInfo);
-      } else {
-        ElfInfo* childInfo = new ElfInfo(filepath);
-        if (rootType != childInfo->getArchType()) {
-          delete childInfo;
-          continue;
-        }
-
-        try {
-          childItem = new TreeItem(childInfo);
-        } catch (const std::exception &e) {
-          throw;
-        }
-
-        __insert_info_in_map(childInfo);
+      } catch (const std::exception &e) {
+        throw;
       }
-
-      childItem->setDepth(parentItem->getDepth() + 1);
-      childItem->setIndex(++*idx);
       parentItem->addChildItem(childItem);
       break;
     }
   }
+
+  if (parentItem->hasChildren() == false)
+    parentItem->setFolded(false);
 }
 
-TreeView* ElfUtil::makeTreeView(std::string rootpath)
+TreeView* ElfUtil::makeTreeView(const std::string& rootpath)
 {
   int idx = 0;
+  ElfInfo* rootInfo = nullptr;
   TreeItem* rootItem = nullptr;
   try {
-    rootItem = new TreeItem(rootpath);
+    rootInfo = new ElfInfo(rootpath);
+    rootItem = new TreeItem(rootInfo);
   } catch (const std::exception &e) {
     throw;
   }
 
+  __insert_info_to_map(rootInfo);
+  ElfArchType rootType = rootInfo->getArchType();
   std::queue<TreeItem *> treeQ;
   treeQ.push(rootItem);
-
-  ElfInfo* rootInfo = rootItem->getElfInfo();
-  __insert_info_in_map(rootInfo);
-
-  ElfArchType rootType = rootInfo->getArchType();
 
   while (treeQ.empty() == false) {
     TreeItem* parentItem = treeQ.front();
     treeQ.pop();
-
-    __insert_info_in_map(parentItem->getElfInfo());
 
     try {
       __make_children_item(parentItem, rootType, &idx);
@@ -180,17 +181,17 @@ TreeView* ElfUtil::makeTreeView(std::string rootpath)
       delete rootItem;
       throw;
     }
+
     std::list<TreeItem*> children = parentItem->getChildren();
     for (TreeItem* child : children)
       treeQ.push(child);
   }
 
   TreeView* treeView = new TreeView(rootItem);
-  treeView->setCountOfNodes(idx);
   return treeView;
 }
 
-ElfInfo* ElfUtil::getElfInfoByName(std::string name)
+ElfInfo* ElfUtil::getElfInfoByName(const std::string& name)
 {
   if (elfInfoMap.count(name) == 0)
     return nullptr;

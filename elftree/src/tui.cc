@@ -7,9 +7,6 @@
 #include <stdlib.h>
 
 #include <unistd.h>
-#include <ncurses.h>
-#include <menu.h>
-#include <form.h>
 
 #include <boost/algorithm/string.hpp>
 
@@ -17,84 +14,69 @@
 #include "elfutil.h"
 #include "tui.h"
 
+#include "section_selector.h"
+#include "addrdump_text_editor.h"
+
 using namespace std::string_literals;
 using namespace boost::algorithm;
 
-void ElfTreeTUI::travelTree(TreeItem*& item, int* index)
+ElfTreeTUI::ElfTreeTUI()
+{
+  _infoWindow = nullptr;
+  _treeSelector = nullptr;
+  _menuTreeView = nullptr;
+}
+
+void ElfTreeTUI::travelTree(TreeItem*& item, int depth)
 {
   std::string data = item->getFileName();
   if (item->isFolded())
     data.insert(0, "+ ");
   else
     data.insert(0, "- ");
-  for (int i = 0; i < item->getDepth() * 2; i++)
+  for (int i = 0; i < depth * 2; i++)
     data.insert(0, " ");
 
-  itemList[*index] = new_item((const char*)(strdup(data.c_str())), "");
-  set_item_userptr(itemList[*index], item);
+  _menus.push_back(new MenuItem{data, (void*)item});
 
   if (item->isFolded() == true)
     return;
 
   std::list<TreeItem*> children = item->getChildren();
   if (children.empty() == false) {
-    for (TreeItem* child : children) {
-      *index = *index + 1;
-     travelTree(child, index);
-    }
+    for (TreeItem* child : children)
+      travelTree(child, depth + 1);
   }
 }
 
 void ElfTreeTUI::convertViewToItems(TreeView* view)
 {
   TreeItem* rootItem = view->getRootItem();
-  int index = 0;
 
-  travelTree(rootItem,  &index);
+  _menus.clear();
+  std::vector<MenuItem*>().swap(_menus);
+
+  travelTree(rootItem, 0);
 }
 
-void ElfTreeTUI::createMenu(int x, int y)
+void ElfTreeTUI::toggleMenu(bool fold)
 {
-  int size = _menuTreeView->getCountOfNodes() + 2;
-  itemList = (ITEM **)calloc(size, sizeof(ITEM *));
-  itemList[size - 1] = nullptr;
+  int pos;
+  MenuItem* currentMenuItem = _treeSelector->getCurrentItem();
+  TreeItem* currentTreeItem = static_cast<TreeItem*>(currentMenuItem->userptr);
+
+  if (fold == true && (currentTreeItem->isFolded() == true || currentTreeItem->hasChildren() == false))
+      return;
+  else if (fold == false && currentTreeItem->isFolded() == false)
+      return;
+
+  currentTreeItem->setFolded(fold);
   convertViewToItems(_menuTreeView);
-  menuList = new_menu((ITEM **)itemList);
-  menuWindow = newwin(y, x, 0, 0);
-
-  keypad(menuWindow, TRUE);
-
-  set_menu_win(menuList, menuWindow);
-  set_menu_sub(menuList, derwin(menuWindow, 0, 0, 1, 1));
-  set_menu_format(menuList, size, 1);
-
-  /* Set menu mark to the string " * " */
-  set_menu_mark(menuList, " * ");
-
-  refresh();
-  post_menu(menuList);
-  box(menuWindow, 0, 0);
-  wrefresh(menuWindow);
-}
-
-void ElfTreeTUI::clearMenu(void)
-{
-  unpost_menu(menuList);
-  free_menu(menuList);
-  delwin(menuWindow);
-}
-
-void ElfTreeTUI::createInfoWindow(int x, int y) {
-	infoWindow = newwin(y, x - 1, 0, maxX - x);
-  scrollok(infoWindow, TRUE);
-
-	box(infoWindow, 0, 0);
-	wrefresh(infoWindow);
-}
-
-void ElfTreeTUI::clearInfoWindow(void)
-{
-  delwin(infoWindow);
+  pos = _treeSelector->getCursorPosition();
+  _treeSelector->unpost();
+  _treeSelector->setMenuItems(_menus);
+  _treeSelector->post();
+  _treeSelector->setCursorPosition(pos);
 }
 
 void ElfTreeTUI::initTerminal(void) {
@@ -102,14 +84,13 @@ void ElfTreeTUI::initTerminal(void) {
   cbreak();
   noecho();
   keypad(stdscr, TRUE);
-
-  getmaxyx(stdscr, maxY, maxX);
+  refresh();
 }
 
 void ElfTreeTUI::clearTerminal(void)
 {
-  clearMenu();
-  clearInfoWindow();
+  delete _infoWindow;
+  delete _treeSelector;
   endwin();
 }
 
@@ -118,104 +99,139 @@ void ElfTreeTUI::setMenuList(TreeView* view)
   _menuTreeView = view;
 }
 
-std::string __getItemName(ITEM*& item)
+void ElfTreeTUI::refreshTerminal(void)
 {
-  std::string nameStr = item_name(item);
-  TreeItem* treeItem = (TreeItem*)item_userptr(item);
+  _infoWindow->refresh();
+  _treeSelector->reset();
+}
+
+std::string __getItemRawName(MenuItem* item)
+{
+  std::string name = item->name;
+  TreeItem* treeItem = static_cast<TreeItem*>(item->userptr);
   if (treeItem->isFolded())
-    nameStr = nameStr.substr(nameStr.find("+") + 1, nameStr.length());
+    name = name.substr(name.find("+") + 1, name.length());
   else
-    nameStr = nameStr.substr(nameStr.find("-") + 1, nameStr.length());
-
-  trim(nameStr);
-
-  return nameStr;
+    name = name.substr(name.find("-") + 1, name.length());
+  trim(name);
+  return name;
 }
 
-std::vector<std::string> splitStringByLine(std::string s) {
-  std::vector<std::string> v;
-	int start = 0;
-	int d = s.find("\n");
-	while (d != -1){
-		v.push_back(s.substr(start, d - start));
-		start = d + 1;
-		d = s.find("\n", start);
-	}
-	v.push_back(s.substr(start, d - start));
-
-	return v;
-}
-
-void printStringToWindow(ITEM*& currentItem, WINDOW*& window, int i)
+void ElfTreeTUI::printInformation(int start_line)
 {
-  std::string curItemName = __getItemName(currentItem);
-  ElfInfo* elfInfo = ElfUtil::getElfInfoByName(curItemName);
-  wmove(window, 1, 1);
-  wclrtobot(window);
-  box(window, 0, 0);
+  _infoWindow->hideBox();
+  MenuItem *menuItem = _treeSelector->getSelectedItem();
+  std::string curItemName = __getItemRawName(menuItem);
+  ElfInfo* tmpInfo = ElfUtil::getElfInfoByName(curItemName);
 
-  for (auto& str : splitStringByLine(elfInfo->getElfHeaderFormat()))
-    mvwprintw(window, i++, 2, "%s", str.c_str());
+  std::string output = tmpInfo->getElfHeaderFormat();
+  output += "\n";
+  output += tmpInfo->getProgramHeaderFormat();
+  output += "\n";
+  output += tmpInfo->getSectionHeaderFormat();
 
-  mvwprintw(window, i++, 2, "%s", "\n");
-
-  for (auto& str : splitStringByLine(elfInfo->getProgramHeaderFormat()))
-    mvwprintw(window, i++, 2, "%s", str.c_str());
-
-  for (auto& str : splitStringByLine(elfInfo->getSectionHeaderFormat()))
-    mvwprintw(window, i++, 2, "%s", str.c_str());
-
-  box(window, 0, 0);
-  wrefresh(window);
+  _infoWindow->printText(output, start_line);
+  _infoWindow->showBox();
 }
 
-void ElfTreeTUI::toggleMenu(bool fold)
+void ElfTreeTUI::printSection(std::string section)
 {
-  int pos;
-  TreeItem* currentTreeItem;
+  MenuItem* curItem = _treeSelector->getSelectedItem();
+  std::string curItemName = __getItemRawName(curItem);
+  ElfInfo* tmpInfo = ElfUtil::getElfInfoByName(curItemName);
 
-  currentItem = current_item(menuList);
-  currentTreeItem = (TreeItem*)item_userptr(currentItem);
-  if (fold == true && (currentTreeItem->isFolded() == true || currentTreeItem->hasChildren() == false))
-      return;
-  else if (fold == false && currentTreeItem->isFolded() == false)
-      return;
+  std::string output = tmpInfo->getSectionDumpFormat(section);
+  _infoWindow->printText(output, 1);
+  _infoWindow->showBox();
+}
 
-  pos = item_index(currentItem);
-  currentTreeItem->setFolded(fold);
-  clearMenu();
-  createMenu(maxX / 3, maxY);
-  set_current_item(menuList, itemList[pos]);
+void ElfTreeTUI::printAddressDump(const std::string& address)
+{
+  MenuItem* curItem = _treeSelector->getSelectedItem();
+  std::string curItemName = __getItemRawName(curItem);
+  ElfInfo* tmpInfo = ElfUtil::getElfInfoByName(curItemName);
+
+  unsigned int addrSize = std::stoul(address, nullptr, 16);
+  unsigned int size = tmpInfo->getELFSize() - addrSize;
+
+  std::string output = tmpInfo->getMemDumpFormat(address, size);
+  _infoWindow->printText(output, 1);
+  _infoWindow->showBox();
+}
+
+std::string ElfTreeTUI::selectSection(void)
+{
+  SectionSelector* selector =
+    new SectionSelector(
+      {10, 10}, {40, 30});
+
+  MenuItem* item = _treeSelector->getSelectedItem();
+  if (item == nullptr)
+    return "";
+  std::string curItemName = __getItemRawName(item);
+  ElfInfo* tmpInfo = ElfUtil::getElfInfoByName(curItemName);
+
+  std::vector<MenuItem*> selected_menus;
+
+  std::list<std::string> sections = tmpInfo->getSectionList();
+  for (auto& section : sections)
+    selected_menus.push_back(new MenuItem{section, nullptr});
+
+  selector->setMenuItems(selected_menus);
+  selector->post();
+  MenuItem* return_item = selector->selectItem();
+  if (return_item == nullptr)
+    return "";
+
+  return return_item->name;
+}
+
+std::string ElfTreeTUI::inputAddress(void)
+{
+  AddrDumpTextEditor* editor = new AddrDumpTextEditor(
+      {_maxPoint.x/2 - 25, _maxPoint.y/2 - 2},
+      {_maxPoint.x/2 + 25, _maxPoint.y/2 + 1});
+  editor->show();
+  std::string address = editor->editText();
+
+  return address;
 }
 
 void ElfTreeTUI::run(void)
 {
-  currentItem = nullptr;
-  createMenu(maxX / 3, maxY);
-  createInfoWindow((maxX / 3) * 2, LINES);
+  _maxPoint = Window::getMaxXY();
+  int menuX = _maxPoint.x / 3;
+  int menuY = _maxPoint.y;
+  int infoX = menuX * 2;
 
+  convertViewToItems(_menuTreeView);
+  _infoWindow = new InfoWindow(
+      {menuX, 0},
+      {infoX, _maxPoint.y});
+  _treeSelector = new TreeSelector({0, 0}, {menuX, menuY});
+  _treeSelector->setMenuItems(_menus);
+  _treeSelector->post();
+  _treeSelector->setCursorPosition(0);
+
+  int start_line = 1;
   int c;
-  int i  = 1;
+  std::string select_section;
   while ((c = getch()) != KEY_F(1)) {
     switch(c) {
+      case KEY_RESIZE:
+        refreshTerminal();
+        break;
       case KEY_NPAGE:
-        if (currentItem == nullptr)
-          break;
-        wborder(infoWindow, ' ', ' ', ' ',' ',' ',' ',' ',' ');
-        printStringToWindow(currentItem, infoWindow, --i);
+        _infoWindow->upScroll();
         break;
       case KEY_PPAGE:
-        if (currentItem == nullptr)
-          break;
-        wborder(infoWindow, ' ', ' ', ' ',' ',' ',' ',' ',' ');
-        if (i >= 1) i = 1;
-        printStringToWindow(currentItem, infoWindow, ++i);
+        _infoWindow->downScroll();
         break;
       case KEY_DOWN:
-        menu_driver(menuList, REQ_DOWN_ITEM);
+        _treeSelector->downCursor();
         break;
       case KEY_UP:
-        menu_driver(menuList, REQ_UP_ITEM);
+        _treeSelector->upCursor();
         break;
       case KEY_RIGHT: // unfolded
         toggleMenu(false);
@@ -224,14 +240,26 @@ void ElfTreeTUI::run(void)
         toggleMenu(true);
         break;
       case 10: // Enter Keycode
-        currentItem = current_item(menuList);
-        i = 1;
-        printStringToWindow(currentItem, infoWindow, i);
+        _treeSelector->selectItem();
+        start_line = 1;
+        printInformation(start_line);
+        break;
+      case 115: //s
+        _treeSelector->selectItem();
+        select_section = selectSection();
+        if (select_section.empty())
+          break;
+        printSection(select_section);
+        break;
+      case 100: //d
+        _treeSelector->selectItem();
+        std::string address = inputAddress();
+        if (!address.empty())
+          printAddressDump(address);
         break;
     }
-    box(infoWindow, 0, 0);
-    wrefresh(infoWindow);
-    box(menuWindow, 0, 0);
-    wrefresh(menuWindow);
+
+    _infoWindow->showBox();
+    _treeSelector->showBox();
   }
 }
